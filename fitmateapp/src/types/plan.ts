@@ -1,9 +1,12 @@
-export interface Exercise {
-  name: string;
-  sets: number;
+export interface SetDetails {
   reps: number;
   weight: number;
+}
+
+export interface Exercise {
+  name: string;
   rest: number; // in seconds
+  sets: SetDetails[];
 }
 
 export interface Plan {

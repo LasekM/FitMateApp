@@ -1,52 +1,52 @@
-import { useState } from "react";
-import type { Plan } from "../types/plan";
+import { useEffect, useState } from "react";
+import type { Plan, Exercise, SetDetails } from "../types/plan";
 import { Trash2 } from "lucide-react";
 
 interface AddPlanModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (plan: Plan) => void;
+  initialData?: Plan | null;
 }
 
-interface SetDetails {
-  reps: number;
-  weight: number;
-}
+const getInitialPlanState = (): Plan => ({
+  id: Date.now(),
+  name: "",
+  type: "",
+  description: "",
+  exercises: [],
+});
 
 export default function AddPlanModal({
   isOpen,
   onClose,
   onSave,
+  initialData,
 }: AddPlanModalProps) {
-  const [name, setName] = useState("");
-  const [type, setType] = useState("");
-  const [description, setDescription] = useState("");
-  const [exercises, setExercises] = useState<any[]>([]);
+  const [planData, setPlanData] = useState<Plan>(getInitialPlanState());
   const [expanded, setExpanded] = useState<number | null>(null);
 
-  const addExercise = () => {
-    setExercises([
-      ...exercises,
-      {
-        name: "",
-        rest: 60,
-        sets: [
-          { reps: 10, weight: 0 },
-          { reps: 10, weight: 0 },
-          { reps: 10, weight: 0 },
-        ],
-      },
-    ]);
+  useEffect(() => {
+    if (initialData) {
+      setPlanData(initialData);
+    } else {
+      setPlanData(getInitialPlanState());
+    }
+  }, [initialData]);
+
+  const updatePlanField = (field: keyof Plan, value: string) => {
+    setPlanData((prev) => ({ ...prev, [field]: value }));
   };
 
   const updateExerciseField = (
     index: number,
-    field: "name" | "rest",
+    field: keyof Exercise,
     value: string | number
   ) => {
-    const updated = [...exercises];
-    updated[index][field] = value;
-    setExercises(updated);
+    const updatedExercises = [...planData.exercises];
+    // @ts-ignore
+    updatedExercises[index][field] = value;
+    setPlanData((prev) => ({ ...prev, exercises: updatedExercises }));
   };
 
   const updateSet = (
@@ -55,27 +55,38 @@ export default function AddPlanModal({
     field: keyof SetDetails,
     value: number
   ) => {
-    const updated = [...exercises];
-    updated[exIndex].sets[setIndex][field] = value;
-    setExercises(updated);
+    const updatedExercises = [...planData.exercises];
+    updatedExercises[exIndex].sets[setIndex][field] = value;
+    setPlanData((prev) => ({ ...prev, exercises: updatedExercises }));
+  };
+
+  const addExercise = () => {
+    const newExercise: Exercise = {
+      name: "",
+      rest: 60,
+      sets: [{ reps: 10, weight: 0 }],
+    };
+    setPlanData((prev) => ({
+      ...prev,
+      exercises: [...prev.exercises, newExercise],
+    }));
   };
 
   const removeExercise = (index: number) => {
-    const updated = [...exercises];
-    updated.splice(index, 1);
-    setExercises(updated);
-  };
-
-  const removeSet = (exIndex: number, setIndex: number) => {
-    const updated = [...exercises];
-    updated[exIndex].sets.splice(setIndex, 1);
-    setExercises(updated);
+    const updatedExercises = planData.exercises.filter((_, i) => i !== index);
+    setPlanData((prev) => ({ ...prev, exercises: updatedExercises }));
   };
 
   const addSet = (exIndex: number) => {
-    const updated = [...exercises];
-    updated[exIndex].sets.push({ reps: 10, weight: 0 });
-    setExercises(updated);
+    const updatedExercises = [...planData.exercises];
+    updatedExercises[exIndex].sets.push({ reps: 10, weight: 0 });
+    setPlanData((prev) => ({ ...prev, exercises: updatedExercises }));
+  };
+
+  const removeSet = (exIndex: number, setIndex: number) => {
+    const updatedExercises = [...planData.exercises];
+    updatedExercises[exIndex].sets.splice(setIndex, 1);
+    setPlanData((prev) => ({ ...prev, exercises: updatedExercises }));
   };
 
   const toggleExpanded = (index: number) => {
@@ -83,36 +94,9 @@ export default function AddPlanModal({
   };
 
   const handleSave = () => {
-    if (!name.trim()) return;
-    const newPlan: Plan = {
-      id: Date.now(),
-      name,
-      type,
-      description,
-      exercises: exercises.map((ex) => ({
-        name: ex.name,
-        sets: ex.sets.length,
-        reps: Math.round(
-          ex.sets.reduce(
-            (sum: number, s: { reps: number }) => sum + s.reps,
-            0
-          ) / ex.sets.length
-        ),
-        weight: Math.round(
-          ex.sets.reduce(
-            (sum: number, s: { weight: number }) => sum + s.weight,
-            0
-          ) / ex.sets.length
-        ),
-        rest: ex.rest,
-      })),
-    };
-    onSave(newPlan);
+    if (!planData.name.trim()) return;
+    onSave(planData);
     onClose();
-    setName("");
-    setType("");
-    setDescription("");
-    setExercises([]);
   };
 
   if (!isOpen) return null;
@@ -120,30 +104,32 @@ export default function AddPlanModal({
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur flex justify-center items-center z-50">
       <div className="bg-zinc-900 text-white rounded-xl p-6 w-full max-w-2xl overflow-y-auto max-h-[90vh]">
-        <h2 className="text-xl font-bold mb-4">New Training Plan</h2>
-
+        <h2 className="text-xl font-bold mb-4">
+          {initialData ? "Edit Training Plan" : "New Training Plan"}
+        </h2>
         <input
           className="w-full mb-2 p-2 rounded bg-zinc-800 border border-zinc-700"
           placeholder="Plan name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          value={planData.name}
+          onChange={(e) => updatePlanField("name", e.target.value)}
+          required
         />
         <input
           className="w-full mb-2 p-2 rounded bg-zinc-800 border border-zinc-700"
           placeholder="Type (e.g. Strength, FBW, Push/Pull)"
-          value={type}
-          onChange={(e) => setType(e.target.value)}
+          value={planData.type}
+          onChange={(e) => updatePlanField("type", e.target.value)}
         />
         <textarea
           className="w-full mb-4 p-2 rounded bg-zinc-800 border border-zinc-700"
           placeholder="Short description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          value={planData.description}
+          onChange={(e) => updatePlanField("description", e.target.value)}
         />
 
         <h3 className="text-lg font-semibold mb-2">Exercises</h3>
 
-        {exercises.map((ex, i) => (
+        {planData.exercises.map((ex, i) => (
           <div key={i} className="bg-zinc-800 p-3 rounded mb-3">
             <div className="grid grid-cols-3 md:grid-cols-6 gap-2 items-center">
               <div className="col-span-2 md:col-span-3">
@@ -190,7 +176,7 @@ export default function AddPlanModal({
 
             {expanded === i && (
               <div className="mt-3 space-y-2">
-                {ex.sets.map((set: SetDetails, j: number) => (
+                {ex.sets.map((set, j) => (
                   <div key={j} className="grid grid-cols-5 gap-2 items-center">
                     <div className="col-span-2 md:col-span-1">
                       <label className="text-sm text-zinc-400">
@@ -255,7 +241,7 @@ export default function AddPlanModal({
             onClick={handleSave}
             className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded"
           >
-            Save Plan
+            {initialData ? "Save Changes" : "Save Plan"}
           </button>
         </div>
       </div>

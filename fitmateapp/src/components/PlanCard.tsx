@@ -2,30 +2,31 @@ import type { Plan } from "../types/plan";
 
 interface PlanCardProps {
   plan: Plan;
+  onEdit: () => void;
+  onDelete: () => void;
 }
 
-export function PlanCard({ plan }: PlanCardProps) {
+export const PlanCard = ({ plan, onEdit, onDelete }: PlanCardProps) => {
   return (
-    <div className="rounded-2xl bg-zinc-800 text-white p-5 shadow-lg">
-      <h2 className="text-xl font-semibold">{plan.name}</h2>
-      <p className="text-sm text-zinc-400 mb-2">
-        {plan.type} – {plan.description}
-      </p>
-      <ul className="text-sm list-disc pl-5 mb-4">
-        {plan.exercises.map((ex, i) => (
-          <li key={i}>
-            {ex.name}: {ex.sets} sets ({ex.weight} kg, {ex.rest}s)
-          </li>
-        ))}
-      </ul>
-      <div className="flex gap-2">
-        <button className="bg-zinc-700 hover:bg-zinc-600 px-3 py-1 rounded text-white">
+    <div className="bg-gray-800 rounded-xl p-4 text-white shadow">
+      <h2 className="text-lg font-semibold">{plan.name}</h2>
+      <p className="text-sm text-gray-400">{plan.type}</p>
+      <p className="mt-2">{plan.description}</p>
+
+      <div className="mt-4 flex justify-end gap-2">
+        <button
+          onClick={onEdit}
+          className="px-3 py-1 bg-yellow-500 hover:bg-yellow-600 rounded text-sm"
+        >
           Edit
         </button>
-        <button className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-white">
+        <button
+          onClick={onDelete}
+          className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm"
+        >
           Delete
         </button>
       </div>
     </div>
   );
-}
+};
