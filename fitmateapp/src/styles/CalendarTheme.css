@@ -1,0 +1,85 @@
+.react-calendar-theme {
+  border: none;
+  font-family: inherit;
+  width: 100%;
+}
+
+.react-calendar-theme,
+.react-calendar-theme .react-calendar__navigation {
+  background-color: #27272a; /* zinc-800 */
+}
+
+.react-calendar-theme .react-calendar__navigation button {
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+.react-calendar-theme .react-calendar__navigation button:hover,
+.react-calendar-theme .react-calendar__navigation button:focus {
+  background-color: #3f3f46; /* zinc-700 */
+}
+
+.react-calendar-theme .react-calendar__month-view-weekdays__weekday abbr {
+  text-decoration: none;
+  font-weight: 600;
+  color: #a1a1aa; /* zinc-400 */
+}
+
+/* ZMIANA: Dodajemy style dla kafelków, aby imitować zachowanie 'group' */
+.react-calendar-theme .react-calendar__tile {
+  color: #e4e4e7; /* zinc-200 */
+  background-color: transparent;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem;
+  min-height: 120px;
+  position: relative; /* Niezbędne dla absolutnego pozycjonowania plusa */
+}
+
+/* WAŻNA ZMIANA: To jest klucz do pokazania plusa na hover */
+/* Kiedy kafelek (tile) jest hoverowany, znajdujemy button wewnątrz i zmieniamy jego opacity */
+.react-calendar-theme .react-calendar__tile:hover .add-workout-button {
+  opacity: 1;
+}
+
+/* Upewniamy się, że domyślnie jest niewidoczny */
+.add-workout-button {
+  opacity: 0;
+  transition: opacity 200ms ease-in-out; /* Dodaj płynne przejście */
+}
+
+.react-calendar__tile abbr {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.react-calendar-theme .react-calendar__tile:enabled:hover,
+.react-calendar-theme .react-calendar__tile:enabled:focus {
+  background-color: #3f3f46; /* zinc-700 */
+}
+
+.react-calendar-theme .react-calendar__tile--active {
+  background-color: #16a34a; /* green-600 */
+  color: white;
+}
+.react-calendar-theme .react-calendar__tile--active:enabled:hover,
+.react-calendar-theme .react-calendar__tile--active:enabled:focus {
+  background-color: #15803d; /* green-700 */
+}
+
+.react-calendar-theme .react-calendar__tile--now {
+  background-color: rgba(22, 163, 74, 0.2);
+  color: #6ee7b7; /* emerald-300 */
+}
+.react-calendar-theme .react-calendar__tile--now:enabled:hover,
+.react-calendar-theme .react-calendar__tile--now:enabled:focus {
+  background-color: rgba(22, 163, 74, 0.4);
+}
+
+.react-calendar__month-view__days__day--neighboringMonth {
+  color: #52525b; /* zinc-600 */
+}

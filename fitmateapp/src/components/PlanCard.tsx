@@ -1,4 +1,4 @@
-import type { Plan } from "../types/plan"; // Nadal potrzebujemy typu Exercise
+import type { Plan } from "../types/plan";
 
 interface PlanCardProps {
   plan: Plan;
@@ -7,10 +7,9 @@ interface PlanCardProps {
 }
 
 export const PlanCard = ({ plan, onEdit, onDelete }: PlanCardProps) => {
-  const exercises = plan.exercises || []; // Zapewniamy, że exercises to zawsze tablica
+  const exercises = plan.exercises || [];
   const totalExercises = exercises.length;
 
-  // Wyświetl do 5 pierwszych ćwiczeń, jeśli jest ich więcej
   const exercisesToShow = exercises.slice(0, 5);
   const hasMoreExercises = exercises.length > exercisesToShow.length;
 
@@ -27,7 +26,7 @@ export const PlanCard = ({ plan, onEdit, onDelete }: PlanCardProps) => {
         )}
 
         <p className="text-gray-400 text-base mb-4 line-clamp-3">
-          {plan.description || "Brak opisu dla tego planu."}
+          {plan.description || "No description."}
         </p>
 
         {totalExercises > 0 ? (
