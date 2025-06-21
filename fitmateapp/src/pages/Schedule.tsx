@@ -25,6 +25,7 @@ export default function SchedulePage() {
   const [selectedDayForDisplay, setSelectedDayForDisplay] = useState<Date>(
     new Date()
   );
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     const savedWorkouts = localStorage.getItem("scheduledWorkouts");
@@ -37,14 +38,17 @@ export default function SchedulePage() {
       setPlans(JSON.parse(savedPlans));
     }
     setSelectedDayForDisplay(new Date());
+    setIsInitialized(true);
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(
-      "scheduledWorkouts",
-      JSON.stringify(scheduledWorkouts)
-    );
-  }, [scheduledWorkouts]);
+    if (isInitialized) {
+      localStorage.setItem(
+        "scheduledWorkouts",
+        JSON.stringify(scheduledWorkouts)
+      );
+    }
+  }, [scheduledWorkouts, isInitialized]);
 
   const handleDayClick = (date: Date) => {
     setSelectedDayForDisplay(date);
@@ -135,7 +139,8 @@ export default function SchedulePage() {
           value={currentDate}
           tileContent={tileContent}
           className="react-calendar-theme"
-          locale="en-US" // Changed back to English
+          locale="en-US"
+          calendarType="iso8601"
         />
       </div>
 

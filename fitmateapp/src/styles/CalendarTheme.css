@@ -83,3 +83,19 @@
 .react-calendar__month-view__days__day--neighboringMonth {
   color: #52525b; /* zinc-600 */
 }
+
+.calendar-container-small .react-calendar {
+  font-size: 0.8rem;
+}
+
+.calendar-container-small .react-calendar__tile {
+  padding: 0.3rem 0.2rem;
+  height: 1rem !important; /* lub np. 1.75rem */
+}
+
+.calendar-container-small .react-calendar__tile {
+  padding: 0.2rem 0.1rem;
+  height: auto;
+  min-height: 90px;
+  gap: 0.2rem;
+}
