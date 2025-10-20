@@ -25,67 +25,85 @@ export default function SchedulePage() {
   const [selectedDayForDisplay, setSelectedDayForDisplay] = useState<Date>(
     new Date()
   );
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const savedWorkouts = localStorage.getItem("scheduledWorkouts");
-    if (savedWorkouts) {
-      const parsedWorkouts: ScheduledWorkout[] = JSON.parse(savedWorkouts);
-      setScheduledWorkouts(parsedWorkouts);
-    }
-    const savedPlans = localStorage.getItem("plans");
-    if (savedPlans) {
-      setPlans(JSON.parse(savedPlans));
-    }
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const [workoutsData, plansData] = await Promise.all([
+          apiService.getScheduledWorkouts(),
+          apiService.getPlans(),
+        ]);
+
+        setScheduledWorkouts(workoutsData);
+        setPlans(plansData);
+      } catch (err) {
+        console.error("Failed to load data from API:", err);
+        setError("Failed to load schedule data. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
     setSelectedDayForDisplay(new Date());
-    setIsInitialized(true);
   }, []);
-
-  useEffect(() => {
-    if (isInitialized) {
-      localStorage.setItem(
-        "scheduledWorkouts",
-        JSON.stringify(scheduledWorkouts)
-      );
-    }
-  }, [scheduledWorkouts, isInitialized]);
 
   const handleDayClick = (date: Date) => {
     setSelectedDayForDisplay(date);
   };
 
   const handleAddWorkoutClick = (date: Date, event: React.MouseEvent) => {
-    event.stopPropagation(); // Prevents onClickDay from being triggered
+    event.stopPropagation();
     setSelectedDateForModal(date);
-    setEditingWorkout(null); // Ensure modal is in add mode
+    setEditingWorkout(null);
     setIsModalOpen(true);
   };
 
   const handleEditWorkout = (workoutToEdit: ScheduledWorkout) => {
     setEditingWorkout(workoutToEdit);
-    setSelectedDateForModal(null); // Not used in edit mode, initialWorkoutData takes precedence
+    setSelectedDateForModal(null);
     setIsModalOpen(true);
   };
 
-  const handleDeleteWorkout = (workoutId: number) => {
+  const handleDeleteWorkout = async (workoutId: number) => {
     const confirmed = confirm("Are you sure you want to delete this workout?");
     if (confirmed) {
-      setScheduledWorkouts((prev) => prev.filter((w) => w.id !== workoutId));
+      try {
+        await apiService.deleteScheduledWorkout(workoutId);
+
+        setScheduledWorkouts((prev) => prev.filter((w) => w.id !== workoutId));
+      } catch (err) {
+        console.error("Failed to delete workout:", err);
+        alert("Error: Could not delete workout.");
+      }
     }
   };
 
-  const handleSaveWorkout = (workout: ScheduledWorkout) => {
-    if (editingWorkout) {
-      // Edit mode: find and update existing workout
-      setScheduledWorkouts((prev) =>
-        prev.map((w) => (w.id === workout.id ? workout : w))
-      );
-    } else {
-      // Add mode: add new workout
-      setScheduledWorkouts((prev) => [...prev, workout]);
+  const handleSaveWorkout = async (workout: ScheduledWorkout) => {
+    try {
+      if (editingWorkout) {
+        await apiService.updateScheduledWorkout(workout);
+
+        setScheduledWorkouts((prev) =>
+          prev.map((w) => (w.id === workout.id ? workout : w))
+        );
+      } else {
+        const newWorkoutWithId = await apiService.addScheduledWorkout(workout);
+
+        setScheduledWorkouts((prev) => [...prev, newWorkoutWithId]);
+      }
+
+      setIsModalOpen(false);
+      setEditingWorkout(null);
+    } catch (err) {
+      console.error("Failed to save workout:", err);
+      alert("Error: Could not save workout.");
     }
-    setIsModalOpen(false);
-    setEditingWorkout(null); // Always reset after save
   };
 
   const tileContent = ({ date, view }: { date: Date; view: string }) => {
@@ -108,13 +126,21 @@ export default function SchedulePage() {
               ))}
             </div>
           )}
-          <button
+          <div
+            role="button"
+            tabIndex={0}
             onClick={(e) => handleAddWorkoutClick(date, e)}
-            className="add-workout-button absolute top-1 text-white bg-green-600 hover:bg-green-700 rounded-full w-6 h-6 flex items-center justify-center transition-opacity duration-200 z-10"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleAddWorkoutClick(date, e as any);
+              }
+            }}
+            className="add-workout-button absolute top-1 text-white bg-green-600 hover:bg-green-700 rounded-full w-6 h-6 flex items-center justify-center transition-opacity duration-200 z-10 cursor-pointer"
             title="Add workout"
           >
             +
-          </button>
+          </div>
         </div>
       );
     }
@@ -128,6 +154,20 @@ export default function SchedulePage() {
         .filter((w) => w.date === selectedDay.toISOString().split("T")[0])
         .sort((a, b) => (a.time || "").localeCompare(b.time || ""))
     : [];
+
+  if (isLoading) {
+    return (
+      <div className="p-6 text-white text-center text-xl">
+        Loading your schedule... 🏋️
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 text-red-500 text-center text-xl">Error: {error}</div>
+    );
+  }
 
   return (
     <div className="p-6 text-white">
@@ -201,12 +241,12 @@ export default function SchedulePage() {
         isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);
-          setEditingWorkout(null); // Reset edit state when closing modal
+          setEditingWorkout(null);
         }}
         onSave={handleSaveWorkout}
-        date={selectedDateForModal} // For add mode
+        date={selectedDateForModal}
         availablePlans={plans}
-        initialWorkoutData={editingWorkout} // For edit mode
+        initialWorkoutData={editingWorkout}
       />
     </div>
   );

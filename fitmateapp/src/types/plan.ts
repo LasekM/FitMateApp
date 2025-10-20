@@ -10,7 +10,7 @@ export interface Exercise {
 }
 
 export interface Plan {
-  id: number;
+  id: string;
   name: string;
   type: string;
   description: string;

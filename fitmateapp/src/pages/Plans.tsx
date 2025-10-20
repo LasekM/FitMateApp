@@ -1,74 +1,99 @@
-import { useEffect, useState, useRef } from "react";
-import type { Plan } from "../types/plan";
+import { useEffect, useState } from "react";
+import type { Plan as PlanForm } from "../types/plan";
 import AddPlanModal from "../components/AddPlanModal";
 import { PlanCard } from "../components/PlanCard";
+import { PlansService } from "../api-generated";
+import type { PlanDto, CreatePlanDto } from "../api-generated";
 
 export default function Plans() {
-  const [plans, setPlans] = useState<Plan[]>([]);
+  const [plans, setPlans] = useState<PlanDto[]>([]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
-  const isInitialMount = useRef(true);
+
+  const [editingPlan, setEditingPlan] = useState<PlanForm | null>(null);
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log("Attempting to load plans from localStorage...");
-    const stored = localStorage.getItem("plans");
-    if (stored) {
+    const loadPlans = async () => {
       try {
-        const parsedPlans: Plan[] = JSON.parse(stored);
-        const plansArray = Array.isArray(parsedPlans)
-          ? parsedPlans
-          : parsedPlans && typeof parsedPlans === "object" && "0" in parsedPlans
-          ? (Object.values(parsedPlans).filter(
-              (item) =>
-                typeof item === "object" && item !== null && "id" in item
-            ) as Plan[])
-          : [];
-
-        console.log("Plans loaded:", plansArray);
-        setPlans(plansArray);
-      } catch (e) {
-        console.error("Error parsing plans from localStorage:", e);
+        setIsLoading(true);
+        setError(null);
+        const plansData = await PlansService.getPlans();
+        setPlans(plansData);
+      } catch (err) {
+        console.error("Error loading plans from API:", err);
+        setError("Failed to load plans. Please try again.");
+      } finally {
+        setIsLoading(false);
       }
-    } else {
-      console.log("No plans found in localStorage.");
-    }
+    };
+    loadPlans();
   }, []);
 
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-
-    console.log("Saving plans to localStorage:", plans);
-    try {
-      localStorage.setItem("plans", JSON.stringify(plans));
-    } catch (e) {
-      console.error("Error saving plans to localStorage:", e);
-    }
-  }, [plans]);
-
-  const handleAddOrUpdatePlan = (plan: Plan) => {
-    if (editingPlan) {
-      setPlans((prev) => prev.map((p) => (p.id === plan.id ? plan : p)));
-    } else {
-      setPlans((prev) => [...prev, { ...plan, id: Date.now() }]);
-    }
-    setEditingPlan(null);
-    setIsModalOpen(false);
+  const handleEditPlan = (planFromApi: PlanDto) => {
+    const planForForm: PlanForm = {
+      id: planFromApi.id,
+      name: planFromApi.planName,
+      type: planFromApi.type,
+      description: planFromApi.notes || "",
+      exercises: planFromApi.exercises,
+    };
+    setEditingPlan(planForForm);
+    setIsModalOpen(true);
   };
 
-  const handleDeletePlan = (id: number) => {
+  const handleAddOrUpdatePlan = async (formData: PlanForm) => {
+    try {
+      const planDto: CreatePlanDto = {
+        planName: formData.name,
+        type: formData.type,
+        notes: formData.description,
+        exercises: formData.exercises,
+      };
+
+      if (editingPlan) {
+        await PlansService.putPlans({
+          id: editingPlan.id,
+          requestBody: planDto,
+        });
+      } else {
+        await PlansService.createPlan({
+          requestBody: planDto,
+        });
+      }
+
+      const updatedPlans = await PlansService.getPlans();
+      setPlans(updatedPlans);
+
+      setEditingPlan(null);
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error("Failed to save plan:", err);
+      alert("Error: Could not save plan. Check console for details.");
+    }
+  };
+
+  const handleDeletePlan = async (id: string) => {
     const confirmed = confirm("Are you sure you want to delete this plan?");
     if (!confirmed) return;
 
-    setPlans((prev) => prev.filter((p) => p.id !== id));
+    try {
+      await PlansService.deletePlans({ id: id });
+      setPlans((prev) => prev.filter((p) => p.id !== id));
+    } catch (err) {
+      console.error("Failed to delete plan:", err);
+      alert("Error: Could not delete plan.");
+    }
   };
 
-  const handleEditPlan = (plan: Plan) => {
-    setEditingPlan(plan);
-    setIsModalOpen(true);
-  };
+  if (isLoading) {
+    return <div className="p-6 text-white text-center text-xl">Loading...</div>;
+  }
+  if (error) {
+    return <div className="p-6 text-red-500 text-center text-xl">{error}</div>;
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -86,14 +111,26 @@ export default function Plans() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        {plans.map((plan) => (
-          <PlanCard
-            key={plan.id}
-            plan={plan}
-            onEdit={() => handleEditPlan(plan)}
-            onDelete={() => handleDeletePlan(plan.id)}
-          />
-        ))}
+        {plans.length > 0 ? (
+          plans.map((plan) => (
+            <PlanCard
+              key={plan.id}
+              plan={{
+                id: plan.id,
+                name: plan.planName,
+                type: plan.type,
+                description: plan.notes || "",
+                exercises: plan.exercises,
+              }}
+              onEdit={() => handleEditPlan(plan)}
+              onDelete={() => handleDeletePlan(plan.id)}
+            />
+          ))
+        ) : (
+          <p className="text-zinc-400 md:col-span-2 text-center">
+            You don't have any plans yet. Click "Add new" to create one!
+          </p>
+        )}
       </div>
 
       <AddPlanModal

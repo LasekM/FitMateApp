@@ -1,10 +1,10 @@
 import type { Exercise } from "./plan";
 
 export interface ScheduledWorkout {
-  id: number;
+  id: string;
   date: string;
   time?: string;
-  planId: number;
+  planId: string;
   planName: string;
   exercises: Exercise[];
   status: "planned" | "completed" | "skipped";
