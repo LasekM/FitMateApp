@@ -3,14 +3,13 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { ExerciseDto } from './ExerciseDto';
-import type { ScheduledStatus } from './ScheduledStatus';
 export type CreateScheduledDto = {
-    date: string;
+    date?: string | null;
     time?: string | null;
-    planId: string;
-    planName: string;
+    planId?: string;
+    planName?: string | null;
     notes?: string | null;
-    exercises?: Array<ExerciseDto>;
-    status?: ScheduledStatus;
+    exercises?: Array<ExerciseDto> | null;
+    status?: string | null;
 };
 

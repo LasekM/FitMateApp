@@ -2,8 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type SetDto = {
-    reps?: number;
-    weight?: number;
+export type E1rmPointDto = {
+    day?: string;
+    e1Rm?: number;
+    sessionId?: string | null;
 };
 

@@ -4,7 +4,9 @@ import {
   Dumbbell,
   BarChart2,
   CalendarRange,
+  LogOut,
 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
@@ -14,9 +16,11 @@ const navItems = [
 ];
 
 const Sidebar = () => {
+  const { user, logout } = useAuth();
+
   return (
-    <aside className="w-64 bg-gray-900 p-6">
-      <h1 className="text-2xl font-bold mb-8">FitMate</h1>
+    <aside className="w-64 bg-gray-900 p-6 flex flex-col min-h-screen">
+      <h1 className="text-2xl font-bold mb-8 text-green-500">FitMate</h1>
       <nav className="space-y-2">
         {navItems.map((item) => (
           <NavLink
@@ -36,6 +40,23 @@ const Sidebar = () => {
           </NavLink>
         ))}
       </nav>
+      <div className="mt-auto">
+        {user && (
+          <div className="pt-4 border-t border-gray-700 text-center">
+            <p className="text-sm text-gray-400">Logged in as:</p>
+            <p className="text-lg font-semibold text-white">
+              {user.preferred_username}
+            </p>
+          </div>
+        )}
+        <button
+          onClick={logout}
+          className="flex items-center gap-3 px-4 py-2 rounded-lg w-full text-gray-300 hover:bg-red-800 hover:text-white mt-4 transition-colors"
+        >
+          <LogOut size={20} />
+          <span>Logout</span>
+        </button>
+      </div>
     </aside>
   );
 };

@@ -2,8 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type SetDto = {
-    reps?: number;
-    weight?: number;
+export type LogoutRequestDto = {
+    refreshToken?: string | null;
 };
 

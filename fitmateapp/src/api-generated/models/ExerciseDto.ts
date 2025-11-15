@@ -4,8 +4,8 @@
 /* eslint-disable */
 import type { SetDto } from './SetDto';
 export type ExerciseDto = {
-    name: string;
-    rest: number;
-    sets: Array<SetDto>;
+    name?: string | null;
+    rest?: number;
+    sets?: Array<SetDto> | null;
 };
 

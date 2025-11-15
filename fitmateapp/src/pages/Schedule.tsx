@@ -2,29 +2,37 @@ import { useState, useEffect } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import "../styles/CalendarTheme.css";
-import type { Plan } from "../types/plan";
-import type { ScheduledWorkout } from "../types/schedule";
+import type { Plan as PlanForm } from "../types/plan";
+import type { ScheduledWorkout as ScheduleForm } from "../types/schedule";
 import AddWorkoutModal from "../components/AddWorkoutModal";
+import { ScheduledService, PlansService } from "../api-generated";
+import type {
+  ScheduledDto,
+  PlanDto,
+  CreateScheduledDto,
+} from "../api-generated";
 
 type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];
 
 export default function SchedulePage() {
-  const [scheduledWorkouts, setScheduledWorkouts] = useState<
-    ScheduledWorkout[]
-  >([]);
-  const [plans, setPlans] = useState<Plan[]>([]);
+  const [scheduledWorkouts, setScheduledWorkouts] = useState<ScheduledDto[]>(
+    []
+  );
+  const [plans, setPlans] = useState<PlanDto[]>([]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState<Value>(new Date());
   const [selectedDateForModal, setSelectedDateForModal] = useState<Date | null>(
     null
   );
-  const [editingWorkout, setEditingWorkout] = useState<ScheduledWorkout | null>(
+  const [editingWorkout, setEditingWorkout] = useState<ScheduleForm | null>(
     null
   );
   const [selectedDayForDisplay, setSelectedDayForDisplay] = useState<Date>(
     new Date()
   );
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,8 +43,8 @@ export default function SchedulePage() {
         setError(null);
 
         const [workoutsData, plansData] = await Promise.all([
-          apiService.getScheduledWorkouts(),
-          apiService.getPlans(),
+          ScheduledService.getApiScheduled(),
+          PlansService.getApiPlans(),
         ]);
 
         setScheduledWorkouts(workoutsData);
@@ -53,6 +61,80 @@ export default function SchedulePage() {
     setSelectedDayForDisplay(new Date());
   }, []);
 
+  const mapApiPlansToFormPlans = (apiPlans: PlanDto[]): PlanForm[] => {
+    return apiPlans.map((p) => ({
+      id: p.id || "",
+      name: p.planName || "Untitled",
+      type: p.type || "No Type",
+      description: p.notes || "",
+      exercises: (p.exercises as any) || [],
+    }));
+  };
+
+  const handleEditWorkout = (workoutFromApi: ScheduledDto) => {
+    if (!workoutFromApi.id) return;
+
+    const workoutForForm: ScheduleForm = {
+      id: workoutFromApi.id,
+      date: workoutFromApi.date || new Date().toISOString().split("T")[0],
+      time: workoutFromApi.time || undefined,
+      planId: workoutFromApi.planId || "",
+      planName: workoutFromApi.planName || "No Name",
+      exercises: (workoutFromApi.exercises as any) || [],
+      status: (workoutFromApi.status as any) || "planned",
+    };
+    setEditingWorkout(workoutForForm);
+    setSelectedDateForModal(null);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteWorkout = async (workoutId: string) => {
+    const confirmed = confirm("Are you sure you want to delete this workout?");
+    if (confirmed) {
+      try {
+        await ScheduledService.deleteApiScheduled({ id: workoutId });
+        setScheduledWorkouts((prev) => prev.filter((w) => w.id !== workoutId));
+      } catch (err) {
+        console.error("Failed to delete workout:", err);
+        alert("Error: Could not delete workout.");
+      }
+    }
+  };
+
+  const handleSaveWorkout = async (formData: ScheduleForm) => {
+    try {
+      const requestBody: CreateScheduledDto = {
+        date: formData.date,
+        time: formData.time || null,
+        planId: formData.planId,
+        planName: formData.planName,
+        notes: "",
+        exercises: formData.exercises as any,
+        status: formData.status,
+      };
+
+      if (editingWorkout) {
+        await ScheduledService.putApiScheduled({
+          id: editingWorkout.id,
+          requestBody: requestBody,
+        });
+      } else {
+        await ScheduledService.postApiScheduled({
+          requestBody: requestBody,
+        });
+      }
+
+      const updatedWorkouts = await ScheduledService.getApiScheduled();
+      setScheduledWorkouts(updatedWorkouts);
+
+      setIsModalOpen(false);
+      setEditingWorkout(null);
+    } catch (err) {
+      console.error("Failed to save workout:", err);
+      alert("Error: Could not save workout.");
+    }
+  };
+
   const handleDayClick = (date: Date) => {
     setSelectedDayForDisplay(date);
   };
@@ -64,55 +146,12 @@ export default function SchedulePage() {
     setIsModalOpen(true);
   };
 
-  const handleEditWorkout = (workoutToEdit: ScheduledWorkout) => {
-    setEditingWorkout(workoutToEdit);
-    setSelectedDateForModal(null);
-    setIsModalOpen(true);
-  };
-
-  const handleDeleteWorkout = async (workoutId: number) => {
-    const confirmed = confirm("Are you sure you want to delete this workout?");
-    if (confirmed) {
-      try {
-        await apiService.deleteScheduledWorkout(workoutId);
-
-        setScheduledWorkouts((prev) => prev.filter((w) => w.id !== workoutId));
-      } catch (err) {
-        console.error("Failed to delete workout:", err);
-        alert("Error: Could not delete workout.");
-      }
-    }
-  };
-
-  const handleSaveWorkout = async (workout: ScheduledWorkout) => {
-    try {
-      if (editingWorkout) {
-        await apiService.updateScheduledWorkout(workout);
-
-        setScheduledWorkouts((prev) =>
-          prev.map((w) => (w.id === workout.id ? workout : w))
-        );
-      } else {
-        const newWorkoutWithId = await apiService.addScheduledWorkout(workout);
-
-        setScheduledWorkouts((prev) => [...prev, newWorkoutWithId]);
-      }
-
-      setIsModalOpen(false);
-      setEditingWorkout(null);
-    } catch (err) {
-      console.error("Failed to save workout:", err);
-      alert("Error: Could not save workout.");
-    }
-  };
-
   const tileContent = ({ date, view }: { date: Date; view: string }) => {
     if (view === "month") {
       const dateString = date.toISOString().split("T")[0];
       const workoutsForDay = scheduledWorkouts.filter(
         (w) => w.date === dateString
       );
-
       return (
         <div className="relative h-full w-full flex flex-col justify-between items-center p-1">
           {workoutsForDay.length > 0 && (
@@ -121,15 +160,15 @@ export default function SchedulePage() {
                 <div
                   key={w.id}
                   className="h-3 w-3 bg-green-500 rounded-full"
-                  title={`${w.planName} (${w.time})`}
-                ></div>
+                  title={w.planName || undefined}
+                />
               ))}
             </div>
           )}
           <div
             role="button"
             tabIndex={0}
-            onClick={(e) => handleAddWorkoutClick(date, e)}
+            onClick={(e) => handleAddWorkoutClick(date, e as any)}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
@@ -147,27 +186,19 @@ export default function SchedulePage() {
     return null;
   };
 
-  const selectedDay = selectedDayForDisplay;
+  if (isLoading) {
+    return <div className="p-6 text-white text-center text-xl">Loading...</div>;
+  }
+  if (error) {
+    return <div className="p-6 text-red-500 text-center text-xl">{error}</div>;
+  }
 
+  const selectedDay = selectedDayForDisplay;
   const workoutsForSelectedDay = selectedDay
     ? scheduledWorkouts
         .filter((w) => w.date === selectedDay.toISOString().split("T")[0])
         .sort((a, b) => (a.time || "").localeCompare(b.time || ""))
     : [];
-
-  if (isLoading) {
-    return (
-      <div className="p-6 text-white text-center text-xl">
-        Loading your schedule... 🏋️
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6 text-red-500 text-center text-xl">Error: {error}</div>
-    );
-  }
 
   return (
     <div className="p-6 text-white">
@@ -209,7 +240,7 @@ export default function SchedulePage() {
                     {workout.planName}
                   </p>
                   <p className="text-sm text-zinc-400">
-                    {workout.exercises.length} exercises
+                    {workout.exercises?.length || 0} exercises
                   </p>
                 </div>
                 <div className="flex space-x-2">
@@ -220,7 +251,7 @@ export default function SchedulePage() {
                     Edit
                   </button>
                   <button
-                    onClick={() => handleDeleteWorkout(workout.id)}
+                    onClick={() => handleDeleteWorkout(workout.id!)}
                     className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg transition"
                   >
                     Delete
@@ -230,8 +261,7 @@ export default function SchedulePage() {
             ))
           ) : (
             <p className="text-zinc-400">
-              No workouts scheduled for this day. Click the '+' icon on a day in
-              the calendar to add a new one.
+              No workouts scheduled for this day. Click the '+' icon on a day...
             </p>
           )}
         </div>
@@ -245,7 +275,7 @@ export default function SchedulePage() {
         }}
         onSave={handleSaveWorkout}
         date={selectedDateForModal}
-        availablePlans={plans}
+        availablePlans={mapApiPlansToFormPlans(plans)}
         initialWorkoutData={editingWorkout}
       />
     </div>

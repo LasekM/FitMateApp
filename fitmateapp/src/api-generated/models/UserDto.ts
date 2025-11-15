@@ -2,8 +2,10 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type SetDto = {
-    reps?: number;
-    weight?: number;
+export type UserDto = {
+    id?: string;
+    fullName?: string | null;
+    email?: string | null;
+    userName?: string | null;
 };
 

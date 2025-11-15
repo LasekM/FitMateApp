@@ -2,7 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export enum ScheduledStatus {
-    PLANNED = 'planned',
-    COMPLETED = 'completed',
-}
+export type AuthResponse = {
+    accessToken?: string | null;
+    expiresAtUtc?: string;
+    refreshToken?: string | null;
+};
+

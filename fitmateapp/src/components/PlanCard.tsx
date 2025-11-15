@@ -2,11 +2,17 @@ import type { Plan } from "../types/plan";
 
 interface PlanCardProps {
   plan: Plan;
-  onEdit: () => void;
-  onDelete: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  readOnly?: boolean;
 }
 
-export const PlanCard = ({ plan, onEdit, onDelete }: PlanCardProps) => {
+export const PlanCard = ({
+  plan,
+  onEdit,
+  onDelete,
+  readOnly = false,
+}: PlanCardProps) => {
   const exercises = plan.exercises || [];
   const totalExercises = exercises.length;
 
@@ -62,20 +68,24 @@ export const PlanCard = ({ plan, onEdit, onDelete }: PlanCardProps) => {
         </div>
       </div>
 
-      <div className="flex justify-end space-x-3 mt-6">
-        <button
-          onClick={onEdit}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg transition-colors duration-200 font-medium"
-        >
-          Edit
-        </button>
-        <button
-          onClick={onDelete}
-          className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg transition-colors duration-200 font-medium"
-        >
-          Delete
-        </button>
-      </div>
+      {!readOnly && (
+        <div className="flex justify-end space-x-3 mt-6">
+          <button
+            onClick={onEdit}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg transition-colors duration-200 font-medium disabled:bg-gray-500 disabled:cursor-not-allowed"
+            disabled={!onEdit}
+          >
+            Edit
+          </button>
+          <button
+            onClick={onDelete}
+            className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg transition-colors duration-200 font-medium disabled:bg-gray-500 disabled:cursor-not-allowed"
+            disabled={!onDelete}
+          >
+            Delete
+          </button>
+        </div>
+      )}
     </div>
   );
 };

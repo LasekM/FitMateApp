@@ -1,24 +1,32 @@
-# Logs
-logs
+# Sekrety i pliki lokalne (KRYTYCZNE)
+.env
+.env.*
+!.env.example
+appsettings.Development.json
+
+# Logi
 *.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
+# Zależności (Frontend)
 node_modules
+
+# Pliki Builda (Frontend)
 dist
 dist-ssr
-*.local
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# Pliki systemowe i IDE
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+Thumbs.db
+.idea/
+.vscode/
+
+# Zależności i buildy (Backend .NET)
+/bin/
+/obj/
+
+# Pliki User Secrets (Backend .NET)
+secrets.json
+
+# Pliki tymczasowe Vite
+.vite/

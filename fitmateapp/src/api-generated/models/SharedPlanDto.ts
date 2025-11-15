@@ -2,15 +2,13 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { ExerciseDto } from './ExerciseDto';
-export type ScheduledDto = {
+export type SharedPlanDto = {
     id?: string;
-    date?: string | null;
-    time?: string | null;
     planId?: string;
     planName?: string | null;
-    notes?: string | null;
-    exercises?: Array<ExerciseDto> | null;
+    sharedByName?: string | null;
+    sharedAtUtc?: string;
     status?: string | null;
+    respondedAtUtc?: string | null;
 };
 

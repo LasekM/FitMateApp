@@ -2,23 +2,26 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { CreateScheduledDto } from '../models/CreateScheduledDto';
+import type { AbortSessionRequest } from '../models/AbortSessionRequest';
+import type { CompleteSessionRequest } from '../models/CompleteSessionRequest';
+import type { PatchSetRequest } from '../models/PatchSetRequest';
+import type { StartSessionRequest } from '../models/StartSessionRequest';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
-export class ScheduledService {
+export class SessionsService {
     /**
      * @returns any OK
      * @throws ApiError
      */
-    public static postApiScheduled({
+    public static postApiSessionsStart({
         requestBody,
     }: {
-        requestBody?: CreateScheduledDto,
+        requestBody?: StartSessionRequest,
     }): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/scheduled',
+            url: '/api/sessions/start',
             body: requestBody,
             mediaType: 'application/json',
             errors: {
@@ -31,51 +34,16 @@ export class ScheduledService {
      * @returns any OK
      * @throws ApiError
      */
-    public static getApiScheduled(): CancelablePromise<any> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/scheduled',
-            errors: {
-                401: `Unauthorized`,
-                403: `Forbidden`,
-            },
-        });
-    }
-    /**
-     * @returns any OK
-     * @throws ApiError
-     */
-    public static getApiScheduled1({
-        id,
-    }: {
-        id: string,
-    }): CancelablePromise<any> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/scheduled/{id}',
-            path: {
-                'id': id,
-            },
-            errors: {
-                401: `Unauthorized`,
-                403: `Forbidden`,
-            },
-        });
-    }
-    /**
-     * @returns any OK
-     * @throws ApiError
-     */
-    public static putApiScheduled({
+    public static patchApiSessionsSet({
         id,
         requestBody,
     }: {
         id: string,
-        requestBody?: CreateScheduledDto,
+        requestBody?: PatchSetRequest,
     }): CancelablePromise<any> {
         return __request(OpenAPI, {
-            method: 'PUT',
-            url: '/api/scheduled/{id}',
+            method: 'PATCH',
+            url: '/api/sessions/{id}/set',
             path: {
                 'id': id,
             },
@@ -91,14 +59,64 @@ export class ScheduledService {
      * @returns any OK
      * @throws ApiError
      */
-    public static deleteApiScheduled({
+    public static postApiSessionsComplete({
+        id,
+        requestBody,
+    }: {
+        id: string,
+        requestBody?: CompleteSessionRequest,
+    }): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/sessions/{id}/complete',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                401: `Unauthorized`,
+                403: `Forbidden`,
+            },
+        });
+    }
+    /**
+     * @returns any OK
+     * @throws ApiError
+     */
+    public static postApiSessionsAbort({
+        id,
+        requestBody,
+    }: {
+        id: string,
+        requestBody?: AbortSessionRequest,
+    }): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/sessions/{id}/abort',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                401: `Unauthorized`,
+                403: `Forbidden`,
+            },
+        });
+    }
+    /**
+     * @returns any OK
+     * @throws ApiError
+     */
+    public static getApiSessions({
         id,
     }: {
         id: string,
     }): CancelablePromise<any> {
         return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/api/scheduled/{id}',
+            method: 'GET',
+            url: '/api/sessions/{id}',
             path: {
                 'id': id,
             },
@@ -112,37 +130,19 @@ export class ScheduledService {
      * @returns any OK
      * @throws ApiError
      */
-    public static getApiScheduledByDate({
-        date,
+    public static getApiSessionsByRange({
+        from,
+        to,
     }: {
-        date?: string,
+        from?: string,
+        to?: string,
     }): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/scheduled/by-date',
+            url: '/api/sessions/by-range',
             query: {
-                'date': date,
-            },
-            errors: {
-                401: `Unauthorized`,
-                403: `Forbidden`,
-            },
-        });
-    }
-    /**
-     * @returns any OK
-     * @throws ApiError
-     */
-    public static postApiScheduledDuplicate({
-        id,
-    }: {
-        id: string,
-    }): CancelablePromise<any> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/scheduled/{id}/duplicate',
-            path: {
-                'id': id,
+                'from': from,
+                'to': to,
             },
             errors: {
                 401: `Unauthorized`,

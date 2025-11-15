@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
-import type { Plan, Exercise, SetDetails } from "../types/plan";
-import type { ScheduledWorkout } from "../types/schedule";
+import type { Plan as PlanForm } from "../types/plan";
+import type { ScheduledWorkout as ScheduleForm } from "../types/schedule";
 
 interface AddWorkoutModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (workout: ScheduledWorkout) => void;
-  date: Date | null; // Date from calendar, for new workout
-  availablePlans: Plan[];
-  initialWorkoutData?: ScheduledWorkout | null; // Prop for editing, optional
+  onSave: (workout: ScheduleForm) => void;
+  date: Date | null;
+  availablePlans: PlanForm[];
+  initialWorkoutData?: ScheduleForm | null;
 }
 
 export default function AddWorkoutModal({
@@ -21,37 +21,40 @@ export default function AddWorkoutModal({
 }: AddWorkoutModalProps) {
   const [step, setStep] = useState(1);
   const [selectedPlanId, setSelectedPlanId] = useState<string>("");
-  const [workoutData, setWorkoutData] = useState<Exercise[]>([]); // Exercises with weights, reps etc.
-  const [time, setTime] = useState("12:00");
+  const [formData, setFormData] = useState<Partial<ScheduleForm>>({});
 
   useEffect(() => {
     if (isOpen) {
       if (initialWorkoutData) {
-        // Edit mode
-        setStep(2); // Go directly to step 2 as plan is already selected
+        setStep(2);
         setSelectedPlanId(String(initialWorkoutData.planId));
-        // Deep copy exercises to avoid modifying the original plan object
-        setWorkoutData(
-          JSON.parse(JSON.stringify(initialWorkoutData.exercises))
-        );
-        setTime(initialWorkoutData.time || "12:00"); // Set time from data
+        setFormData(initialWorkoutData);
       } else {
-        // Add mode
         setStep(1);
         setSelectedPlanId("");
-        setWorkoutData([]);
-        setTime("12:00");
+        setFormData({
+          date: date?.toISOString().split("T")[0],
+          time: "12:00",
+          status: "planned",
+        });
       }
     }
-  }, [isOpen, initialWorkoutData]);
+  }, [isOpen, initialWorkoutData, date]);
 
   const handleNextStep = () => {
-    const plan = availablePlans.find((p) => p.id === Number(selectedPlanId));
+    const plan = availablePlans.find((p) => p.id === selectedPlanId);
+
     if (plan) {
-      // Deep copy exercises so weights can be modified without affecting the original plan
-      const exercisesCopy = JSON.parse(JSON.stringify(plan.exercises));
-      setWorkoutData(exercisesCopy);
+      setFormData((prev) => ({
+        ...prev,
+        planId: plan.id,
+        planName: plan.name,
+        exercises: JSON.parse(JSON.stringify(plan.exercises)),
+      }));
       setStep(2);
+    } else {
+      console.error("Plan not found in handleNextStep:", selectedPlanId);
+      alert("Error: Could not find the selected plan.");
     }
   };
 
@@ -60,45 +63,26 @@ export default function AddWorkoutModal({
     setIndex: number,
     weight: number
   ) => {
-    const updatedWorkoutData = [...workoutData];
-    // Ensure sets exist on the given exercise and set
-    if (
-      updatedWorkoutData[exIndex] &&
-      updatedWorkoutData[exIndex].sets &&
-      updatedWorkoutData[exIndex].sets[setIndex]
-    ) {
-      updatedWorkoutData[exIndex].sets[setIndex].weight = weight;
-      setWorkoutData(updatedWorkoutData);
-    }
+    setFormData((prev) => {
+      if (!prev.exercises) return prev;
+
+      const newExercises = [...prev.exercises];
+      if (newExercises[exIndex]?.sets?.[setIndex]) {
+        newExercises[exIndex].sets[setIndex].weight = weight;
+      }
+      return { ...prev, exercises: newExercises };
+    });
+  };
+
+  const handleTimeChange = (time: string) => {
+    setFormData((prev) => ({ ...prev, time }));
   };
 
   const handleSave = () => {
-    // Date comes from initialWorkoutData for editing, or from prop.date for adding
-    const workoutDateString = initialWorkoutData
-      ? initialWorkoutData.date
-      : date
-      ? date.toISOString().split("T")[0]
-      : "";
-
-    if (!workoutDateString || !selectedPlanId) return;
-
-    const plan = availablePlans.find((p) => p.id === Number(selectedPlanId));
-    if (!plan) return;
-
-    const newWorkout: ScheduledWorkout = {
-      id: initialWorkoutData ? initialWorkoutData.id : Date.now(), // Use existing ID or generate new
-      date: workoutDateString,
-      time: time,
-      planId: plan.id,
-      planName: plan.name,
-      exercises: workoutData, // Save modified exercises
-      status: initialWorkoutData ? initialWorkoutData.status : "planned", // Retain status for editing
-    };
-    onSave(newWorkout);
+    onSave(formData as ScheduleForm);
     onClose();
   };
 
-  // Modal header and date display based on mode
   const modalTitle = initialWorkoutData ? "Edit Workout" : "Add Workout";
   const displayDate = initialWorkoutData
     ? new Date(initialWorkoutData.date).toLocaleDateString()
@@ -106,7 +90,7 @@ export default function AddWorkoutModal({
     ? date.toLocaleDateString()
     : "No date";
 
-  if (!isOpen || (!date && !initialWorkoutData)) return null;
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur flex justify-center items-center z-50">
@@ -114,6 +98,7 @@ export default function AddWorkoutModal({
         <h2 className="text-xl font-bold mb-4">
           {modalTitle} for {displayDate}
         </h2>
+
         {step === 1 && (
           <div>
             <h2 className="text-xl font-bold mb-4">
@@ -166,12 +151,12 @@ export default function AddWorkoutModal({
               <input
                 id="workout-time"
                 type="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
+                value={formData.time || "12:00"}
+                onChange={(e) => handleTimeChange(e.target.value)}
                 className="p-2 rounded bg-zinc-800 border border-zinc-700"
               />
             </div>
-            {workoutData.map((ex, exIndex) => (
+            {formData.exercises?.map((ex, exIndex) => (
               <div key={exIndex} className="bg-zinc-800 p-3 rounded mb-3">
                 <p className="font-semibold text-lg">{ex.name}</p>
                 {ex.sets &&

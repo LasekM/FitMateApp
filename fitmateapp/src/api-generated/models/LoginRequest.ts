@@ -2,8 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type SetDto = {
-    reps?: number;
-    weight?: number;
+export type LoginRequest = {
+    userNameOrEmail?: string | null;
+    password?: string | null;
 };
 

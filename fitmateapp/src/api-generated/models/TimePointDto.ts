@@ -2,8 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type SetDto = {
-    reps?: number;
-    weight?: number;
+export type TimePointDto = {
+    period?: string | null;
+    value?: number;
+    exerciseName?: string | null;
 };
 

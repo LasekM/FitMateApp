@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
-import type { LoginRequest } from "../api-generated";
+import type { RegisterRequest } from "../api-generated";
 
-export default function LoginPage() {
-  const [formData, setFormData] = useState<LoginRequest>({
-    userNameOrEmail: "",
+export default function RegisterPage() {
+  const [formData, setFormData] = useState<RegisterRequest>({
+    email: "",
+    userName: "",
+    fullName: "",
     password: "",
   });
   const [error, setError] = useState<string | null>(null);
-  const { login } = useAuth();
+  const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -20,20 +22,21 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
 
-    if (!formData.userNameOrEmail || !formData.password) {
-      setError("Please enter your username/email and password.");
+    if (!formData.email || !formData.userName || !formData.password) {
+      setError("Email, Username, and Password are required.");
       return;
     }
 
     try {
-      await login(formData);
-      navigate("/");
+      await register(formData);
+      navigate("/login");
     } catch (err: any) {
       console.error(err);
-      if (err.response?.status === 401 || err.response?.status === 400) {
-        setError("Invalid credentials. Please try again.");
+      if (err.response?.data?.errors) {
+        const messages = Object.values(err.response.data.errors).flat();
+        setError(messages.join(" "));
       } else {
-        setError("An error occurred. Please try again later.");
+        setError("Failed to register. Please try again.");
       }
     }
   };
@@ -45,7 +48,7 @@ export default function LoginPage() {
         className="bg-zinc-800 p-8 rounded-xl shadow-lg w-full max-w-md"
       >
         <h2 className="text-3xl font-bold text-white mb-6 text-center">
-          Login to FitMate
+          Create your FitMate account
         </h2>
 
         {error && (
@@ -60,22 +63,54 @@ export default function LoginPage() {
         <div className="space-y-4">
           <div>
             <label
-              htmlFor="userNameOrEmail"
+              htmlFor="email"
               className="block text-sm font-medium text-zinc-300 mb-1"
             >
-              Username or Email
+              Email Address
             </label>
             <input
-              type="text"
-              id="userNameOrEmail"
-              name="userNameOrEmail"
-              value={formData.userNameOrEmail || ""}
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email || ""}
               onChange={handleChange}
               required
               className="w-full p-3 bg-zinc-900 rounded-lg border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
-
+          <div>
+            <label
+              htmlFor="userName"
+              className="block text-sm font-medium text-zinc-300 mb-1"
+            >
+              Username
+            </label>
+            <input
+              type="text"
+              id="userName"
+              name="userName"
+              value={formData.userName || ""}
+              onChange={handleChange}
+              required
+              className="w-full p-3 bg-zinc-900 rounded-lg border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="fullName"
+              className="block text-sm font-medium text-zinc-300 mb-1"
+            >
+              Full Name (Optional)
+            </label>
+            <input
+              type="text"
+              id="fullName"
+              name="fullName"
+              value={formData.fullName || ""}
+              onChange={handleChange}
+              className="w-full p-3 bg-zinc-900 rounded-lg border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
           <div>
             <label
               htmlFor="password"
@@ -99,17 +134,17 @@ export default function LoginPage() {
           type="submit"
           className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg mt-6 transition duration-200"
         >
-          Login
+          Create Account
         </button>
 
         <div className="text-center mt-6">
           <p className="text-zinc-400">
-            Don't have an account?{" "}
+            Already have an account?{" "}
             <Link
-              to="/register"
+              to="/login"
               className="font-medium text-green-500 hover:text-green-400"
             >
-              Sign up
+              Log in
             </Link>
           </p>
         </div>
