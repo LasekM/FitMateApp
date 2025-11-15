@@ -2,56 +2,62 @@ import { useEffect, useState } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import "../styles/CalendarTheme.css";
-import type { ScheduledWorkout } from "../types/schedule";
+import { ScheduledService, type ScheduledDto } from "../api-generated";
+
+const getFormattedDate = (date: Date): string => {
+  return date.toISOString().split("T")[0];
+};
 
 export default function CalendarView() {
-  const [scheduledWorkouts, setScheduledWorkouts] = useState<
-    ScheduledWorkout[]
-  >([]);
+  const [activeDays, setActiveDays] = useState<Set<string>>(new Set());
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const savedWorkouts = localStorage.getItem("scheduledWorkouts");
-    if (savedWorkouts) {
-      setScheduledWorkouts(JSON.parse(savedWorkouts));
-    }
+    const loadWorkouts = async () => {
+      try {
+        setIsLoading(true);
+        const data: ScheduledDto[] = await ScheduledService.getApiScheduled();
+
+        const workoutDates = new Set(
+          data.map((w: ScheduledDto) => w.date || "")
+        );
+
+        setActiveDays(workoutDates);
+      } catch (e) {
+        console.error("Failed to load workouts for dashboard calendar", e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadWorkouts();
   }, []);
 
-  const tileContent = ({ date, view }: { date: Date; view: string }) => {
+  const tileClassName = ({ date, view }: { date: Date; view: string }) => {
     if (view === "month") {
-      const dateString = date.toISOString().split("T")[0];
-      const workoutsForDay = scheduledWorkouts.filter(
-        (w) => w.date === dateString
-      );
+      const dateString = getFormattedDate(date);
+      const isToday = dateString === getFormattedDate(new Date());
 
-      return (
-        <div className="relative h-full w-full flex flex-col items-center justify-end p-1">
-          {workoutsForDay.length > 0 && (
-            <div className="flex justify-center items-center gap-1 mt-auto mb-10">
-              {workoutsForDay.slice(0, 3).map((w) => (
-                <div
-                  key={w.id}
-                  className="h-2 w-2 bg-green-500 rounded-full"
-                  title={`${w.planName} (${w.time})`}
-                ></div>
-              ))}
-            </div>
-          )}
-        </div>
-      );
+      if (isToday) return null;
+
+      if (activeDays.has(dateString)) {
+        return "active-day-tile";
+      }
     }
     return null;
   };
 
   return (
     <div className="w-full calendar-container-small">
-      <Calendar
-        value={new Date()}
-        tileContent={tileContent}
-        className="react-calendar-theme pointer-events-none"
-        locale="en-US"
-        showNavigation={false}
-        calendarType="iso8601"
-      />
+      {!isLoading && (
+        <Calendar
+          value={new Date()}
+          tileClassName={tileClassName}
+          className="react-calendar-theme pointer-events-none rounded-2xl"
+          locale="en-US"
+          showNavigation={false}
+          calendarType="iso8601"
+        />
+      )}
     </div>
   );
 }

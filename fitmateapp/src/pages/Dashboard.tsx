@@ -3,7 +3,7 @@ import CalendarView from "../components/CalendarView";
 
 const Dashboard = () => {
   return (
-    <div className="p-6 grid grid-cols-1 md:grid-cols-6 gap-6 min-h-screen">
+    <div className="p-6 grid grid-cols-1 md:grid-cols-6 gap-6 min-h-screen ">
       {/* Last Workout */}
       <div className="bg-gray-900 text-white rounded-2xl p-6 shadow-lg col-span-1 md:col-span-2 row-span-2 min-h-[300px] flex flex-col justify-center items-center">
         <h3 className="text-3xl mt-2 font-semibold mb-2">Last Workout</h3>
@@ -19,9 +19,9 @@ const Dashboard = () => {
       </div>
 
       {/* Calendar */}
-      <div className="bg-gray-700 text-white rounded-2xl p-6 shadow-lg col-span-1 md:col-span-2 row-span-2 min-h-[300px] flex flex-col justify-start items-center">
+      <div className="bg-gray-700 text-white rounded-2xl p-6 shadow-lg col-span-1 md:col-span-2 row-span-2 min-h-[300px] flex flex-col justify-start items-center overflow-hidden">
         <h3 className="text-3xl mt-2 font-semibold mb-4">Your Active Days</h3>
-        <div className="w-full h-full flex items-start justify-center rounded-2xl overflow-hidden">
+        <div className="w-full h-full flex items-center justify-center">
           <CalendarView />
         </div>
       </div>

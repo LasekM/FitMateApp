@@ -11,6 +11,8 @@ import type {
   PlanDto,
   CreateScheduledDto,
 } from "../api-generated";
+import { toast } from "react-toastify";
+import { ConfirmToast } from "../components/ConfirmToast";
 
 type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];
@@ -89,16 +91,30 @@ export default function SchedulePage() {
   };
 
   const handleDeleteWorkout = async (workoutId: string) => {
-    const confirmed = confirm("Are you sure you want to delete this workout?");
-    if (confirmed) {
+    const deleteAction = async () => {
       try {
         await ScheduledService.deleteApiScheduled({ id: workoutId });
         setScheduledWorkouts((prev) => prev.filter((w) => w.id !== workoutId));
+        toast.success("Workout deleted!"); // ZMIANA
       } catch (err) {
         console.error("Failed to delete workout:", err);
-        alert("Error: Could not delete workout.");
+        toast.error("Error: Could not delete workout.");
       }
-    }
+    };
+
+    toast.warning(
+      <ConfirmToast
+        message="Are you sure you want to delete this workout?"
+        onConfirm={deleteAction}
+      />,
+      {
+        position: "top-center",
+        autoClose: false,
+        closeOnClick: false,
+        draggable: false,
+        theme: "dark",
+      }
+    );
   };
 
   const handleSaveWorkout = async (formData: ScheduleForm) => {

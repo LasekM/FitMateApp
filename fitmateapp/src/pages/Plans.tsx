@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import type { Plan as PlanForm } from "../types/plan";
 import AddPlanModal from "../components/AddPlanModal";
 import { PlanCard } from "../components/PlanCard";
-
 import {
   PlansService,
   type PlanDto,
   type CreatePlanDto,
 } from "../api-generated";
+import { toast } from "react-toastify";
+import { ConfirmToast } from "../components/ConfirmToast";
 
 export default function Plans() {
   const [myPlans, setMyPlans] = useState<PlanDto[]>([]);
@@ -88,16 +89,30 @@ export default function Plans() {
   };
 
   const handleDeletePlan = async (id: string) => {
-    const confirmed = confirm("Are you sure you want to delete this plan?");
-    if (!confirmed) return;
+    const deleteAction = async () => {
+      try {
+        await PlansService.deleteApiPlans({ id: id });
+        setMyPlans((prev) => prev.filter((p) => p.id !== id));
+        toast.success("Plan deleted!");
+      } catch (err) {
+        console.error("Failed to delete plan:", err);
+        toast.error("Error: Could not delete plan.");
+      }
+    };
 
-    try {
-      await PlansService.deleteApiPlans({ id: id });
-      setMyPlans((prev) => prev.filter((p) => p.id !== id));
-    } catch (err) {
-      console.error("Failed to delete plan:", err);
-      alert("Error: Could not delete plan.");
-    }
+    toast.warning(
+      <ConfirmToast
+        message="Are you sure you want to delete this plan?"
+        onConfirm={deleteAction}
+      />,
+      {
+        position: "top-center",
+        autoClose: false,
+        closeOnClick: false,
+        draggable: false,
+        theme: "dark",
+      }
+    );
   };
 
   if (isLoading) {
