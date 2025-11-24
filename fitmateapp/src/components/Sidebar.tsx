@@ -6,7 +6,7 @@ import {
   CalendarRange,
   LogOut,
 } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext.tsx";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
@@ -19,7 +19,7 @@ const Sidebar = () => {
   const { user, logout } = useAuth();
 
   return (
-    <aside className="w-64 bg-gray-900 p-6 flex flex-col min-h-screen">
+    <aside className="w-64 bg-gray-900 p-6 flex flex-col h-screen sticky top-0">
       <h1 className="text-2xl font-bold mb-8 text-green-500">FitMate</h1>
       <nav className="space-y-2">
         {navItems.map((item) => (
@@ -45,7 +45,7 @@ const Sidebar = () => {
           <div className="pt-4 border-t border-gray-700 text-center">
             <p className="text-sm text-gray-400">Logged in as:</p>
             <p className="text-lg font-semibold text-white">
-              {user.preferred_username}
+              {user.username}
             </p>
           </div>
         )}

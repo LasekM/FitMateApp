@@ -8,12 +8,14 @@ interface JwtPayload {
   sub?: string;
   id?: string;
   email?: string;
+  preferred_username?: string;
   [key: string]: any;
 }
 
 interface User {
   id: string;
   email: string;
+  username: string;
 }
 
 interface AuthContextType {
@@ -39,17 +41,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const decoded = jwtDecode<JwtPayload>(token);
         const userId = decoded.sub || decoded.id || "";
         const userEmail = decoded.email || "";
-
-        if (userId) {
-          setUser({ id: userId, email: userEmail });
-          setAuthToken(token);
-        } else {
-          // Token jest invalid
-          logout();
-        }
+        const username = decoded.preferred_username || decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"] || userEmail.split("@")[0];
+        setUser({ id: userId, email: userEmail, username });
+        setAuthToken(token);
       } catch (error) {
-        console.error("Invalid token on init:", error);
-        logout();
+        console.error("Invalid token", error);
+        localStorage.removeItem("accessToken");
       }
     }
     setIsLoading(false);
@@ -75,9 +72,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setAuthToken(response.accessToken);
 
     const decoded = jwtDecode<JwtPayload>(response.accessToken);
+    const userId = decoded.sub || decoded.id || "";
+    const userEmail = decoded.email || "";
+    const username = decoded.preferred_username || decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"] || userEmail.split("@")[0];
     setUser({
-      id: decoded.sub || decoded.id || "",
-      email: decoded.email || "",
+      id: userId,
+      email: userEmail,
+      username,
     });
   };
 

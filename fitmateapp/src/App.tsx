@@ -4,6 +4,7 @@ import RegisterPage from "./pages/Register.tsx";
 import Dashboard from "./pages/Dashboard";
 import Plans from "./pages/Plans";
 import Schedule from "./pages/Schedule";
+import Statistics from "./pages/Statistics";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import MainLayout from "./layout/MainLayout";
 
@@ -19,6 +20,7 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/plans" element={<Plans />} />
           <Route path="/schedule" element={<Schedule />} />
+          <Route path="/statistics" element={<Statistics />} />
         </Route>
       </Route>
     </Routes>
