@@ -2,7 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type LogoutRequestDto = {
-    refreshToken: string;
+export type CreateUserDto = {
+    fullName: string;
+    email: string;
+    userName: string;
 };
 

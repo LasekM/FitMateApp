@@ -14,6 +14,13 @@ export class WebApiService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/',
+            errors: {
+                400: `Bad request / validation or business error.`,
+                401: `Unauthorized – brak lub błędny token.`,
+                403: `Forbidden – brak uprawnień.`,
+                404: `Resource not found.`,
+                500: `Unexpected server error.`,
+            },
         });
     }
     /**
@@ -24,6 +31,13 @@ export class WebApiService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/health/db',
+            errors: {
+                400: `Bad request / validation or business error.`,
+                401: `Unauthorized – brak lub błędny token.`,
+                403: `Forbidden – brak uprawnień.`,
+                404: `Resource not found.`,
+                500: `Unexpected server error.`,
+            },
         });
     }
 }

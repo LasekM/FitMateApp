@@ -2,7 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type LogoutRequestDto = {
-    refreshToken: string;
+export type BodyMetricsProgressDto = {
+    date?: string;
+    weightKg?: number;
+    bmi?: number;
 };
 

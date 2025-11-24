@@ -3,8 +3,6 @@
 /* tslint:disable */
 /* eslint-disable */
 export type PatchSetRequest = {
-    exerciseOrder?: number;
-    setNumber?: number;
     repsDone?: number | null;
     weightDone?: number | null;
     rpe?: number | null;

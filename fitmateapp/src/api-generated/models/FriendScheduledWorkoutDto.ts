@@ -2,16 +2,14 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { ExerciseDto } from './ExerciseDto';
-export type ScheduledDto = {
-    id?: string;
+export type FriendScheduledWorkoutDto = {
+    scheduledId?: string;
+    userId?: string;
+    userName?: string | null;
+    fullName?: string | null;
     date?: string;
     time?: string | null;
-    planId?: string;
     planName?: string | null;
-    notes?: string | null;
-    exercises?: Array<ExerciseDto> | null;
     status?: string | null;
-    visibleToFriends?: boolean;
 };
 

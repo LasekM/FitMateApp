@@ -4,8 +4,8 @@
 /* eslint-disable */
 import type { ExerciseDto } from './ExerciseDto';
 export type CreatePlanDto = {
-    planName?: string | null;
-    type?: string | null;
+    planName: string;
+    type: string;
     notes?: string | null;
     exercises?: Array<ExerciseDto> | null;
 };

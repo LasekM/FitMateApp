@@ -13,6 +13,7 @@ import type {
 } from "../api-generated";
 import { toast } from "react-toastify";
 import { ConfirmToast } from "../components/ConfirmToast";
+import { toDateOnly } from "../utils/dateUtils";
 
 type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];
@@ -46,7 +47,7 @@ export default function SchedulePage() {
 
         const [workoutsData, plansData] = await Promise.all([
           ScheduledService.getApiScheduled(),
-          PlansService.getApiPlans(),
+          PlansService.getApiPlans({}),
         ]);
 
         setScheduledWorkouts(workoutsData);
@@ -84,6 +85,7 @@ export default function SchedulePage() {
       planName: workoutFromApi.planName || "No Name",
       exercises: (workoutFromApi.exercises as any) || [],
       status: (workoutFromApi.status as any) || "planned",
+      visibleToFriends: false,
     };
     setEditingWorkout(workoutForForm);
     setSelectedDateForModal(null);
@@ -120,7 +122,7 @@ export default function SchedulePage() {
   const handleSaveWorkout = async (formData: ScheduleForm) => {
     try {
       const requestBody: CreateScheduledDto = {
-        date: formData.date,
+        date: toDateOnly(new Date(formData.date)),
         time: formData.time || null,
         planId: formData.planId,
         planName: formData.planName,

@@ -29,7 +29,7 @@ export default function RegisterPage() {
 
     try {
       await register(formData);
-      navigate("/login");
+      navigate("/");
     } catch (err: any) {
       console.error(err);
       if (err.response?.data?.errors) {

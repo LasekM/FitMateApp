@@ -2,7 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type LogoutRequestDto = {
-    refreshToken: string;
+export type AddSessionSetRequest = {
+    setNumber?: number | null;
+    repsPlanned?: number;
+    weightPlanned?: number;
 };
 

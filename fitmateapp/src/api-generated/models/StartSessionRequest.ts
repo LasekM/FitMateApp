@@ -3,6 +3,6 @@
 /* tslint:disable */
 /* eslint-disable */
 export type StartSessionRequest = {
-    scheduledId?: string;
+    scheduledId: string;
 };
 

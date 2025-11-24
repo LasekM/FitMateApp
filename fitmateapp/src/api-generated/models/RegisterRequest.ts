@@ -3,9 +3,9 @@
 /* tslint:disable */
 /* eslint-disable */
 export type RegisterRequest = {
-    email?: string | null;
-    password?: string | null;
-    fullName?: string | null;
-    userName?: string | null;
+    email: string;
+    password: string;
+    fullName: string;
+    userName: string;
 };
 

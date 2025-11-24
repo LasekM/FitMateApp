@@ -2,8 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type PlanVsActualItemDto = {
-    exerciseName?: string | null;
+export type SessionSetDto = {
+    id?: string;
     setNumber?: number;
     repsPlanned?: number;
     weightPlanned?: number;
@@ -11,8 +11,5 @@ export type PlanVsActualItemDto = {
     weightDone?: number | null;
     rpe?: number | null;
     isFailure?: boolean | null;
-    isExtra?: boolean;
-    readonly repsDiff?: number;
-    readonly weightDiff?: number;
 };
 

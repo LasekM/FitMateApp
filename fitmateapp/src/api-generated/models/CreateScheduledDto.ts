@@ -4,12 +4,13 @@
 /* eslint-disable */
 import type { ExerciseDto } from './ExerciseDto';
 export type CreateScheduledDto = {
-    date?: string | null;
+    date: string;
     time?: string | null;
-    planId?: string;
+    planId: string;
     planName?: string | null;
     notes?: string | null;
     exercises?: Array<ExerciseDto> | null;
     status?: string | null;
+    visibleToFriends?: boolean;
 };
 

@@ -3,13 +3,13 @@
 /* tslint:disable */
 /* eslint-disable */
 export type FriendRequestDto = {
-    id?: string;
-    fromUserId?: string;
-    fromName?: string | null;
-    toUserId?: string;
-    toName?: string | null;
-    status?: string | null;
-    createdAtUtc?: string;
+    id: string;
+    fromUserId: string;
+    fromName: string;
+    toUserId: string;
+    toName: string;
+    status: string;
+    createdAtUtc: string;
     respondedAtUtc?: string | null;
 };
 

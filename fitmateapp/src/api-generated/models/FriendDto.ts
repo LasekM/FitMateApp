@@ -3,7 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 export type FriendDto = {
-    userId?: string;
-    userName?: string | null;
+    userId: string;
+    userName: string;
 };
 

@@ -8,4 +8,5 @@ export interface ScheduledWorkout {
   planName: string;
   exercises: Exercise[];
   status: "planned" | "completed" | "skipped";
+  visibleToFriends: boolean;
 }

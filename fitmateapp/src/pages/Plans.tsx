@@ -25,9 +25,11 @@ export default function Plans() {
         setIsLoading(true);
         setError(null);
         const [myPlansData, sharedPlansData] = await Promise.all([
-          PlansService.getApiPlans(),
+          PlansService.getApiPlans({ includeShared: false }),
           PlansService.getApiPlansSharedWithMe(),
         ]);
+        console.log("My Plans Data:", myPlansData);
+        console.log("Shared Plans Data:", sharedPlansData);
         setMyPlans(myPlansData);
         setSharedPlans(sharedPlansData);
       } catch (err) {
@@ -77,7 +79,7 @@ export default function Plans() {
         });
       }
 
-      const updatedPlans = await PlansService.getApiPlans();
+      const updatedPlans = await PlansService.getApiPlans({ includeShared: false });
       setMyPlans(updatedPlans);
 
       setEditingPlan(null);

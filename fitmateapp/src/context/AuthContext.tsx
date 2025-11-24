@@ -1,197 +1,104 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  type ReactNode,
-} from "react";
-import axios from "axios";
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { jwtDecode } from "jwt-decode";
-import { AuthService, OpenAPI } from "../api-generated";
-import type {
-  LoginRequest,
-  RegisterRequest,
-  RefreshRequestDto,
-  AuthResponse,
-} from "../api-generated";
-import { toast } from "react-toastify";
+import { AuthService } from "../api-generated";
+import type { LoginRequest, RegisterRequest, AuthResponse } from "../api-generated";
+import { setAuthToken } from "../config/api.config";
 
-interface UserClaims {
-  nameid?: string;
-  unique_name?: string;
-  preferred_username?: string;
+interface JwtPayload {
+  sub?: string;
+  id?: string;
   email?: string;
-  exp: number;
+  [key: string]: any;
+}
+
+interface User {
+  id: string;
+  email: string;
 }
 
 interface AuthContextType {
-  user: UserClaims | null;
+  user: User | null;
   isAuthenticated: boolean;
-  login: (data: LoginRequest) => Promise<AuthResponse>;
-  register: (data: RegisterRequest) => Promise<AuthResponse>;
-  logout: () => void;
   isLoading: boolean;
+  login: (credentials: LoginRequest) => Promise<void>;
+  register: (credentials: RegisterRequest) => Promise<void>;
+  logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
-
-const setupApiClient = (token: string | null) => {
-  OpenAPI.TOKEN = token || undefined;
-};
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<UserClaims | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const setSessionData = (
-    accessToken: string | null,
-    refreshToken?: string | null
-  ) => {
-    if (accessToken && (refreshToken || localStorage.getItem("refreshToken"))) {
-      localStorage.setItem("accessToken", accessToken);
-      if (refreshToken) {
-        localStorage.setItem("refreshToken", refreshToken);
-      }
-
-      setupApiClient(accessToken);
-
-      try {
-        const decoded = jwtDecode<UserClaims>(accessToken);
-        setUser(decoded);
-        setToken(accessToken);
-      } catch (e) {
-        console.error("Invalid token", e);
-        setUser(null);
-        setToken(null);
-      }
-    } else {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      setupApiClient(null);
-      setToken(null);
-      setUser(null);
-    }
-  };
-
+  // Inicjalizacja - sprawdź czy user ma już token w localStorage
   useEffect(() => {
-    const initializeAuth = () => {
-      const accessToken = localStorage.getItem("accessToken");
-      const refreshToken = localStorage.getItem("refreshToken");
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      try {
+        const decoded = jwtDecode<JwtPayload>(token);
+        const userId = decoded.sub || decoded.id || "";
+        const userEmail = decoded.email || "";
 
-      if (accessToken && refreshToken) {
-        try {
-          const decoded = jwtDecode<UserClaims>(accessToken);
-          if (decoded.exp * 1000 > Date.now()) {
-            setSessionData(accessToken, refreshToken);
-          } else {
-          }
-        } catch (e) {
-          setSessionData(null);
+        if (userId) {
+          setUser({ id: userId, email: userEmail });
+          setAuthToken(token);
+        } else {
+          // Token jest invalid
+          logout();
         }
+      } catch (error) {
+        console.error("Invalid token on init:", error);
+        logout();
       }
-      setIsLoading(false);
-    };
-
-    initializeAuth();
+    }
+    setIsLoading(false);
   }, []);
 
-  const setSession = (authResponse: AuthResponse | null) => {
-    if (authResponse && authResponse.accessToken && authResponse.refreshToken) {
-      setSessionData(authResponse.accessToken, authResponse.refreshToken);
-    } else {
-      setSessionData(null);
+  const login = async (credentials: LoginRequest) => {
+    const response = await AuthService.postApiAuthLogin({ requestBody: credentials });
+    handleAuthResponse(response);
+  };
+
+  const register = async (credentials: RegisterRequest) => {
+    const response = await AuthService.postApiAuthRegister({ requestBody: credentials });
+    handleAuthResponse(response);
+  };
+
+  const handleAuthResponse = (response: AuthResponse) => {
+    if (!response.accessToken || !response.refreshToken) {
+      throw new Error("Invalid auth response");
     }
-  };
 
-  const login = async (data: LoginRequest) => {
-    const response = await AuthService.postApiAuthLogin({ requestBody: data });
-    setSession(response);
-    toast.success("Logged in successfully!");
-    return response;
-  };
+    localStorage.setItem("accessToken", response.accessToken);
+    localStorage.setItem("refreshToken", response.refreshToken);
+    setAuthToken(response.accessToken);
 
-  const register = async (data: RegisterRequest) => {
-    const response = await AuthService.postApiAuthRegister({
-      requestBody: data,
+    const decoded = jwtDecode<JwtPayload>(response.accessToken);
+    setUser({
+      id: decoded.sub || decoded.id || "",
+      email: decoded.email || "",
     });
-    setSession(response);
-    toast.success("Account created successfully!");
-    return response;
   };
 
-  const logout = async () => {
+  const logout = () => {
     const refreshToken = localStorage.getItem("refreshToken");
+    
+    // Opcjonalnie wywołaj endpoint logout (best practice)
     if (refreshToken) {
-      try {
-        await AuthService.postApiAuthLogout({ requestBody: { refreshToken } });
-      } catch (e) {
-        console.error("Logout API call failed, logging out locally.", e);
-      }
+      AuthService.postApiAuthLogout({ requestBody: { refreshToken } }).catch((err) =>
+        console.error("Logout API call failed:", err)
+      );
     }
-    setSessionData(null);
-    window.location.href = "/login";
+
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    setAuthToken(null);
+    setUser(null);
   };
-
-  useEffect(() => {
-    const interceptorId = axios.interceptors.response.use(
-      (response) => response,
-      async (error) => {
-        const originalRequest = error.config;
-
-        const isApiRequest = originalRequest.url.startsWith(OpenAPI.BASE);
-
-        if (
-          error.response?.status === 401 &&
-          !originalRequest._retry &&
-          isApiRequest
-        ) {
-          originalRequest._retry = true;
-
-          try {
-            const refreshToken = localStorage.getItem("refreshToken");
-            if (!refreshToken) throw new Error("No refresh token available");
-
-            const refreshRequest: RefreshRequestDto = { refreshToken };
-
-            const response = await AuthService.postApiAuthRefresh({
-              requestBody: refreshRequest,
-            });
-
-            if (response.accessToken && response.refreshToken) {
-              setSession(response);
-              originalRequest.headers[
-                "Authorization"
-              ] = `Bearer ${response.accessToken}`;
-              return axios(originalRequest);
-            }
-          } catch (refreshError) {
-            console.error("Silent refresh failed, logging out.", refreshError);
-            setSessionData(null);
-            window.location.href = "/login";
-            return Promise.reject(refreshError);
-          }
-        }
-        return Promise.reject(error);
-      }
-    );
-
-    return () => {
-      axios.interceptors.response.eject(interceptorId);
-    };
-  }, []);
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated: !!user,
-        login,
-        register,
-        logout,
-        isLoading,
-      }}
-    >
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
@@ -200,7 +107,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error("useAuth must be used within AuthProvider");
   }
   return context;
 };

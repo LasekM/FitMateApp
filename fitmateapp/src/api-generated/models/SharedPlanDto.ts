@@ -7,6 +7,7 @@ export type SharedPlanDto = {
     planId?: string;
     planName?: string | null;
     sharedByName?: string | null;
+    sharedWithName?: string | null;
     sharedAtUtc?: string;
     status?: string | null;
     respondedAtUtc?: string | null;
