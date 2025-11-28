@@ -26,5 +26,13 @@ export type UserProfileDto = {
      * List of roles assigned to the user.
      */
     roles?: Array<string> | null;
+    /**
+     * Target weight goal in kilograms.
+     */
+    targetWeightKg?: number | null;
+    /**
+     * Whether biometric data is shared with friends.
+     */
+    shareBiometricsWithFriends?: boolean;
 };
 

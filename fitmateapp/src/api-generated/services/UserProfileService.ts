@@ -3,7 +3,10 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { ChangePasswordRequest } from '../models/ChangePasswordRequest';
+import type { TargetWeightDto } from '../models/TargetWeightDto';
+import type { UpdateBiometricsPrivacyRequest } from '../models/UpdateBiometricsPrivacyRequest';
 import type { UpdateProfileRequest } from '../models/UpdateProfileRequest';
+import type { UpdateTargetWeightRequest } from '../models/UpdateTargetWeightRequest';
 import type { UserProfileDto } from '../models/UserProfileDto';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
@@ -110,6 +113,101 @@ export class UserProfileService {
                     errors: {
                         400: `Błąd walidacji (np. hasło za słabe) lub nieprawidłowe stare hasło.
                         Komunikat: "Current password is incorrect."`,
+                        401: `Użytkownik niezalogowany.`,
+                        403: `Forbidden`,
+                        404: `Resource not found.`,
+                        500: `Unexpected server error.`,
+                    },
+                });
+            }
+            /**
+             * Pobiera wagę docelową użytkownika.
+             * @returns TargetWeightDto Zwraca wagę docelową.
+             * @throws ApiError
+             */
+            public static getApiUserprofileTargetWeight(): CancelablePromise<TargetWeightDto> {
+                return __request(OpenAPI, {
+                    method: 'GET',
+                    url: '/api/userprofile/target-weight',
+                    errors: {
+                        400: `Bad request / validation or business error.`,
+                        401: `Użytkownik niezalogowany.`,
+                        403: `Forbidden`,
+                        404: `Resource not found.`,
+                        500: `Unexpected server error.`,
+                    },
+                });
+            }
+            /**
+             * Ustawia lub usuwa wagę docelową użytkownika.
+             * Pozwala na:
+             * * Ustawienie wagi docelowej (40-200 kg)
+             * * Usunięcie wagi docelowej (null lub 0)
+             *
+             * **Przykładowe żądania:**
+             *
+             * PUT /api/userprofile/target-weight
+             * { "targetWeightKg": 75.5 }
+             *
+             * PUT /api/userprofile/target-weight
+             * { "targetWeightKg": null }
+             *
+             * PUT /api/userprofile/target-weight
+             * { "targetWeightKg": 0 }
+             * @returns void
+             * @throws ApiError
+             */
+            public static putApiUserprofileTargetWeight({
+                requestBody,
+            }: {
+                /**
+                 * Waga docelowa (40-200 kg, null lub 0 czyści).
+                 */
+                requestBody?: UpdateTargetWeightRequest,
+            }): CancelablePromise<void> {
+                return __request(OpenAPI, {
+                    method: 'PUT',
+                    url: '/api/userprofile/target-weight',
+                    body: requestBody,
+                    mediaType: 'application/json',
+                    errors: {
+                        400: `Błąd walidacji (waga poza zakresem 40-200 kg).`,
+                        401: `Użytkownik niezalogowany.`,
+                        403: `Forbidden`,
+                        404: `Resource not found.`,
+                        500: `Unexpected server error.`,
+                    },
+                });
+            }
+            /**
+             * Zmienia ustawienie widoczności danych biometrycznych dla znajomych.
+             * Kontroluje czy znajomi mogą widzieć:
+             * * Wagę docelową
+             * * Pomiary ciała (BodyMeasurements)
+             * * Aktualna wagę
+             *
+             * **Przykładowe żądanie:**
+             *
+             * PUT /api/userprofile/biometrics-privacy
+             * { "shareWithFriends": true }
+             * @returns void
+             * @throws ApiError
+             */
+            public static putApiUserprofileBiometricsPrivacy({
+                requestBody,
+            }: {
+                /**
+                 * Ustawienie widoczności.
+                 */
+                requestBody?: UpdateBiometricsPrivacyRequest,
+            }): CancelablePromise<void> {
+                return __request(OpenAPI, {
+                    method: 'PUT',
+                    url: '/api/userprofile/biometrics-privacy',
+                    body: requestBody,
+                    mediaType: 'application/json',
+                    errors: {
+                        400: `Błąd walidacji.`,
                         401: `Użytkownik niezalogowany.`,
                         403: `Forbidden`,
                         404: `Resource not found.`,

@@ -272,32 +272,45 @@ export class ScheduledService {
                 },
             });
         }
-
         /**
-         * Cofa status treningu z "completed" na "planned".
-         * Usuwa powiązaną sesję treningową.
-         * @returns ScheduledDto Zaktualizowany trening.
+         * Przywraca zakończony/przerwany trening do statusu "Zaplanowany".
+         * Pozwala cofnąć przypadkowe oznaczenie treningu jako zakończonego lub przerwać przerwany trening.
+         *
+         * **Warunki:**
+         * - Działa tylko dla sesji utworzonych przez quick complete (`scheduled/{id}/complete`) lub przerwanych (`Aborted`)
+         * - Nie można przywrócić sesji zakończonej normalnie przez live workout
+         * - Nie może istnieć aktywna sesja dla tego zaplanowanego treningu
+         *
+         * **Akcja:**
+         * - Usuwa sesję treningową (wraz z ćwiczeniami i seriami)
+         * - Zmienia status zaplanowanego treningu na `Planned`
+         *
+         * **Przykładowy scenariusz użycia:**
+         * Użytkownik przez pomyłkę kliknął "Zakończ trening" zamiast "Rozpocznij trening".
+         * @returns void
          * @throws ApiError
          */
-        public static postApiScheduledUncomplete({
+        public static postApiScheduledReopen({
             id,
         }: {
             /**
              * Identyfikator zaplanowanego treningu.
              */
             id: string,
-        }): CancelablePromise<ScheduledDto> {
+        }): CancelablePromise<void> {
             return __request(OpenAPI, {
                 method: 'POST',
-                url: '/api/scheduled/{id}/uncomplete',
+                url: '/api/scheduled/{id}/reopen',
                 path: {
                     'id': id,
                 },
                 errors: {
-                    400: `Trening nie jest zakończony.`,
+                    400: `Nie można przywrócić tego treningu. Możliwe przyczyny:
+                    - Sesja została zakończona normalnie przez live workout (nie quick complete)
+                    - Istnieje aktywna sesja dla tego treningu`,
                     401: `Unauthorized`,
                     403: `Forbidden`,
-                    404: `Nie znaleziono zaplanowanego treningu.`,
+                    404: `Nie znaleziono zaplanowanego treningu lub sesji.`,
                     500: `Unexpected server error.`,
                 },
             });

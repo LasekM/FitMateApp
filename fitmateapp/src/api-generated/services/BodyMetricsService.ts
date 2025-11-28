@@ -197,4 +197,32 @@ export class BodyMetricsService {
                 },
             });
         }
+        /**
+         * Pobiera pomiary znajomego (jeśli udostępnił).
+         * @returns BodyMeasurementDto OK
+         * @throws ApiError
+         */
+        public static getApiBodyMetricsFriends({
+            friendId,
+        }: {
+            /**
+             * ID znajomego.
+             */
+            friendId: string,
+        }): CancelablePromise<BodyMeasurementDto> {
+            return __request(OpenAPI, {
+                method: 'GET',
+                url: '/api/body-metrics/friends/{friendId}',
+                path: {
+                    'friendId': friendId,
+                },
+                errors: {
+                    400: `Bad request / validation or business error.`,
+                    401: `Unauthorized`,
+                    403: `Forbidden`,
+                    404: `Not Found`,
+                    500: `Unexpected server error.`,
+                },
+            });
+        }
     }

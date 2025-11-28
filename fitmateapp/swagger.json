@@ -1790,6 +1790,134 @@
         ]
       }
     },
+    "/api/body-metrics/friends/{friendId}": {
+      "get": {
+        "tags": [
+          "BodyMetrics"
+        ],
+        "summary": "Pobiera pomiary znajomego (jeśli udostępnił).",
+        "parameters": [
+          {
+            "name": "friendId",
+            "in": "path",
+            "description": "ID znajomego.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/BodyMeasurementDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BodyMeasurementDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BodyMeasurementDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/401",
+                  "title": "Unauthorized",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/403",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request / validation or business error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/400",
+                  "title": "One or more validation errors occurred.",
+                  "status": 400,
+                  "traceId": "00-0123456789abcdef0123456789abcdef-0123456789abcdef-00"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/500",
+                  "title": "An unexpected error occurred.",
+                  "status": 500
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "oauth2": [ ]
+          }
+        ]
+      }
+    },
     "/api/friends/{username}": {
       "post": {
         "tags": [
@@ -4887,6 +5015,102 @@
         ]
       }
     },
+    "/api/scheduled/{id}/reopen": {
+      "post": {
+        "tags": [
+          "Scheduled"
+        ],
+        "summary": "Przywraca zakończony/przerwany trening do statusu \"Zaplanowany\".",
+        "description": "Pozwala cofnąć przypadkowe oznaczenie treningu jako zakończonego lub przerwać przerwany trening.\n\n**Warunki:**\n- Działa tylko dla sesji utworzonych przez quick complete (`scheduled/{id}/complete`) lub przerwanych (`Aborted`)\n- Nie można przywrócić sesji zakończonej normalnie przez live workout\n- Nie może istnieć aktywna sesja dla tego zaplanowanego treningu\n\n**Akcja:**\n- Usuwa sesję treningową (wraz z ćwiczeniami i seriami)\n- Zmienia status zaplanowanego treningu na `Planned`\n\n**Przykładowy scenariusz użycia:**\nUżytkownik przez pomyłkę kliknął \"Zakończ trening\" zamiast \"Rozpocznij trening\".",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Identyfikator zaplanowanego treningu.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Trening został przywrócony do statusu zaplanowanego."
+          },
+          "400": {
+            "description": "Nie można przywrócić tego treningu. Możliwe przyczyny:\n- Sesja została zakończona normalnie przez live workout (nie quick complete)\n- Istnieje aktywna sesja dla tego treningu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nie znaleziono zaplanowanego treningu lub sesji.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/401",
+                  "title": "Unauthorized",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/403",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/500",
+                  "title": "An unexpected error occurred.",
+                  "status": 500
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "oauth2": [ ]
+          }
+        ]
+      }
+    },
     "/api/sessions/start": {
       "post": {
         "tags": [
@@ -5894,6 +6118,288 @@
           },
           "400": {
             "description": "Błąd walidacji (np. hasło za słabe) lub nieprawidłowe stare hasło.\nKomunikat: \"Current password is incorrect.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Użytkownik niezalogowany.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/403",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/404",
+                  "title": "Not Found",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/500",
+                  "title": "An unexpected error occurred.",
+                  "status": 500
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "oauth2": [ ]
+          }
+        ]
+      }
+    },
+    "/api/userprofile/target-weight": {
+      "get": {
+        "tags": [
+          "UserProfile"
+        ],
+        "summary": "Pobiera wagę docelową użytkownika.",
+        "responses": {
+          "200": {
+            "description": "Zwraca wagę docelową.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TargetWeightDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Użytkownik niezalogowany.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/403",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request / validation or business error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/400",
+                  "title": "One or more validation errors occurred.",
+                  "status": 400,
+                  "traceId": "00-0123456789abcdef0123456789abcdef-0123456789abcdef-00"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/404",
+                  "title": "Not Found",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/500",
+                  "title": "An unexpected error occurred.",
+                  "status": 500
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "oauth2": [ ]
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "UserProfile"
+        ],
+        "summary": "Ustawia lub usuwa wagę docelową użytkownika.",
+        "description": "Pozwala na:\n* Ustawienie wagi docelowej (40-200 kg)\n* Usunięcie wagi docelowej (null lub 0)\n\n**Przykładowe żądania:**\n\n    PUT /api/userprofile/target-weight\n    { \"targetWeightKg\": 75.5 }\n    \n    PUT /api/userprofile/target-weight\n    { \"targetWeightKg\": null }\n    \n    PUT /api/userprofile/target-weight\n    { \"targetWeightKg\": 0 }",
+        "requestBody": {
+          "description": "Waga docelowa (40-200 kg, null lub 0 czyści).",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTargetWeightRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Waga docelowa została zaktualizowana."
+          },
+          "400": {
+            "description": "Błąd walidacji (waga poza zakresem 40-200 kg).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Użytkownik niezalogowany.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/403",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/404",
+                  "title": "Not Found",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/500",
+                  "title": "An unexpected error occurred.",
+                  "status": 500
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "oauth2": [ ]
+          }
+        ]
+      }
+    },
+    "/api/userprofile/biometrics-privacy": {
+      "put": {
+        "tags": [
+          "UserProfile"
+        ],
+        "summary": "Zmienia ustawienie widoczności danych biometrycznych dla znajomych.",
+        "description": "Kontroluje czy znajomi mogą widzieć:\n* Wagę docelową\n* Pomiary ciała (BodyMeasurements)\n* Aktualna wagę\n\n**Przykładowe żądanie:**\n\n    PUT /api/userprofile/biometrics-privacy\n    { \"shareWithFriends\": true }",
+        "requestBody": {
+          "description": "Ustawienie widoczności.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBiometricsPrivacyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Ustawienie zostało zaktualizowane."
+          },
+          "400": {
+            "description": "Błąd walidacji.",
             "content": {
               "application/json": {
                 "schema": {
@@ -7593,9 +8099,9 @@
             "description": "Total volume (weight × reps) across all sessions.",
             "format": "double"
           },
-          "avgIntensity": {
+          "avgWeight": {
             "type": "number",
-            "description": "Average intensity of workouts.",
+            "description": "Average weight used across all sets.",
             "format": "double"
           },
           "sessionsCount": {
@@ -8068,6 +8574,19 @@
         "additionalProperties": false,
         "description": "Request to start a new workout session."
       },
+      "TargetWeightDto": {
+        "type": "object",
+        "properties": {
+          "targetWeightKg": {
+            "type": "number",
+            "description": "Target weight goal in kilograms.",
+            "format": "double",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Represents the user's target weight."
+      },
       "TimePointDto": {
         "type": "object",
         "properties": {
@@ -8089,6 +8608,20 @@
         },
         "additionalProperties": false,
         "description": "Represents a data point for volume over time."
+      },
+      "UpdateBiometricsPrivacyRequest": {
+        "required": [
+          "shareWithFriends"
+        ],
+        "type": "object",
+        "properties": {
+          "shareWithFriends": {
+            "type": "boolean",
+            "description": "Whether to share biometric data with friends."
+          }
+        },
+        "additionalProperties": false,
+        "description": "Request to update biometrics privacy setting."
       },
       "UpdateProfileRequest": {
         "required": [
@@ -8121,6 +8654,19 @@
         },
         "additionalProperties": false,
         "description": "Request to update user profile information."
+      },
+      "UpdateTargetWeightRequest": {
+        "type": "object",
+        "properties": {
+          "targetWeightKg": {
+            "type": "number",
+            "description": "Target weight goal in kilograms (40-200 kg). Use null or 0 to clear.",
+            "format": "double",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Request to update target weight."
       },
       "UpdateUserDto": {
         "type": "object",
@@ -8206,6 +8752,16 @@
             },
             "description": "List of roles assigned to the user.",
             "nullable": true
+          },
+          "targetWeightKg": {
+            "type": "number",
+            "description": "Target weight goal in kilograms.",
+            "format": "double",
+            "nullable": true
+          },
+          "shareBiometricsWithFriends": {
+            "type": "boolean",
+            "description": "Whether biometric data is shared with friends."
           }
         },
         "additionalProperties": false,

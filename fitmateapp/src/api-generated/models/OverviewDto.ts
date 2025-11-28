@@ -11,9 +11,9 @@ export type OverviewDto = {
      */
     totalVolume?: number;
     /**
-     * Average intensity of workouts.
+     * Average weight used across all sets.
      */
-    avgIntensity?: number;
+    avgWeight?: number;
     /**
      * Total number of workout sessions.
      */

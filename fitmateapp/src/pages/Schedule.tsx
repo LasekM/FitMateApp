@@ -198,7 +198,7 @@ export default function SchedulePage() {
     try {
       console.log("Undoing workout ID:", workoutId);
 
-      await ScheduledService.postApiScheduledUncomplete({
+      await ScheduledService.postApiScheduledReopen({
         id: workoutId,
       });
 
