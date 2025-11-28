@@ -5,6 +5,7 @@ import {
   BarChart2,
   CalendarRange,
   LogOut,
+  User,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext.tsx";
 
@@ -13,6 +14,7 @@ const navItems = [
   { to: "/plans", label: "Plans", icon: <Dumbbell size={20} /> },
   { to: "/schedule", label: "Schedule", icon: <CalendarRange size={20} /> },
   { to: "/statistics", label: "Statistics", icon: <BarChart2 size={20} /> },
+  { to: "/profile", label: "Profile", icon: <User size={20} /> },
 ];
 
 const Sidebar = () => {

@@ -29,7 +29,13 @@ export class FriendsWorkoutsService {
         from,
         to,
     }: {
+        /**
+         * Start date of the range.
+         */
         from: string,
+        /**
+         * End date of the range.
+         */
         to: string,
     }): CancelablePromise<Array<FriendScheduledWorkoutDto>> {
         return __request(OpenAPI, {
@@ -69,7 +75,13 @@ export class FriendsWorkoutsService {
         fromUtc,
         toUtc,
     }: {
+        /**
+         * Start date and time of the range (UTC).
+         */
         fromUtc: string,
+        /**
+         * End date and time of the range (UTC).
+         */
         toUtc: string,
     }): CancelablePromise<Array<FriendWorkoutSessionDto>> {
         return __request(OpenAPI, {

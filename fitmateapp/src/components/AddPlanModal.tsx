@@ -10,7 +10,7 @@ interface AddPlanModalProps {
 }
 
 const getInitialPlanState = (): Plan => ({
-  id: Date.now(),
+  id: Date.now().toString(),
   name: "",
   type: "",
   description: "",

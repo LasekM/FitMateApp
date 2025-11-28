@@ -7,7 +7,7 @@ interface AddWorkoutModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (workout: ScheduleForm) => void;
-  date: Date | null;
+  dateString: string;
   availablePlans: PlanForm[];
   initialWorkoutData?: ScheduleForm | null;
 }
@@ -16,7 +16,7 @@ export default function AddWorkoutModal({
   isOpen,
   onClose,
   onSave,
-  date,
+  dateString,
   availablePlans,
   initialWorkoutData,
 }: AddWorkoutModalProps) {
@@ -39,14 +39,14 @@ export default function AddWorkoutModal({
         setStep(1);
         setSelectedPlanId("");
         setFormData({
-          date: date ? toDateOnly(date) : toDateOnly(new Date()),
+          date: dateString || toDateOnly(new Date()),
           time: "12:00",
           status: "planned",
           visibleToFriends: true,
         });
       }
     }
-  }, [isOpen, initialWorkoutData, date]);
+  }, [isOpen, initialWorkoutData, dateString]);
 
   const handleNextStep = () => {
     const plan = availablePlans.find((p) => p.id === selectedPlanId);
@@ -81,8 +81,8 @@ export default function AddWorkoutModal({
   const modalTitle = initialWorkoutData ? "Edit Workout" : "Add Workout";
   const displayDate = initialWorkoutData
     ? initialWorkoutData.date
-    : date
-    ? date.toLocaleDateString()
+    : dateString
+    ? dateString
     : "No date";
 
   if (!isOpen) return null;

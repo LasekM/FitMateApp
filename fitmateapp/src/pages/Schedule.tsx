@@ -15,6 +15,8 @@ import { toast } from "react-toastify";
 import { ConfirmToast } from "../components/ConfirmToast";
 import { toDateOnly } from "../utils/dateUtils";
 
+
+
 type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];
 
@@ -79,7 +81,7 @@ export default function SchedulePage() {
 
     const workoutForForm: ScheduleForm = {
       id: workoutFromApi.id,
-      date: workoutFromApi.date || new Date().toISOString().split("T")[0],
+      date: workoutFromApi.date ? toDateOnly(new Date(workoutFromApi.date)) : new Date().toISOString().split("T")[0],
       time: workoutFromApi.time || undefined,
       planId: workoutFromApi.planId || "",
       planName: workoutFromApi.planName || "No Name",
@@ -122,7 +124,7 @@ export default function SchedulePage() {
   const handleSaveWorkout = async (formData: ScheduleForm) => {
     try {
       const requestBody: CreateScheduledDto = {
-        date: toDateOnly(new Date(formData.date)),
+        date: formData.date, // Use string directly to avoid timezone issues
         time: formData.time || null,
         planId: formData.planId,
         planName: formData.planName,
@@ -130,6 +132,8 @@ export default function SchedulePage() {
         exercises: formData.exercises as any,
         status: formData.status,
       };
+
+      console.log("Saving workout with body:", requestBody);
 
       if (editingWorkout) {
         await ScheduledService.putApiScheduled({
@@ -147,9 +151,66 @@ export default function SchedulePage() {
 
       setIsModalOpen(false);
       setEditingWorkout(null);
-    } catch (err) {
+      toast.success("Workout saved successfully!");
+    } catch (err: any) {
       console.error("Failed to save workout:", err);
-      alert("Error: Could not save workout.");
+      const errorMessage = err.body?.message || err.message || "Unknown error";
+      toast.error(`Error: ${errorMessage}`);
+    }
+  };
+
+  const handleCompleteWorkout = async (workoutId: string) => {
+    try {
+      await ScheduledService.postApiScheduledComplete({
+        id: workoutId,
+        requestBody: {
+          populateActuals: true,
+        },
+      });
+
+      setScheduledWorkouts((prev) =>
+        prev.map((w) =>
+          w.id === workoutId ? { ...w, status: "completed" } : w
+        )
+      );
+      toast.success("Workout completed!");
+    } catch (err: any) {
+      // Check if the error message indicates the workout is already completed
+      // The error object structure depends on the generated client, usually err.body or err.message
+      const errorMessage = err.body?.message || err.message || JSON.stringify(err);
+      
+      if (errorMessage.includes("Trening jest już zakończony") || errorMessage.includes("already completed")) {
+        console.warn("Backend says already completed, syncing UI to completed for ID:", workoutId);
+        setScheduledWorkouts((prev) =>
+          prev.map((w) =>
+            w.id === workoutId ? { ...w, status: "completed" } : w
+          )
+        );
+        toast.info("Workout was already completed. Updated status.");
+      } else {
+        console.error("Failed to complete workout. ID:", workoutId, "Error:", err);
+        toast.error("Error: Could not complete workout.");
+      }
+    }
+  };
+
+  const handleUncompleteWorkout = async (workoutId: string) => {
+    try {
+      console.log("Undoing workout ID:", workoutId);
+
+      await ScheduledService.postApiScheduledUncomplete({
+        id: workoutId,
+      });
+
+      setScheduledWorkouts((prev) =>
+        prev.map((w) =>
+          w.id === workoutId ? { ...w, status: "planned" } : w
+        )
+      );
+      toast.info("Workout marked as planned.");
+    } catch (err) {
+      console.error("Failed to uncomplete workout. ID:", workoutId, "Error:", err);
+      toast.error("Error: Could not revert workout status.");
     }
   };
 
@@ -166,10 +227,29 @@ export default function SchedulePage() {
 
   const tileContent = ({ date, view }: { date: Date; view: string }) => {
     if (view === "month") {
-      const dateString = date.toISOString().split("T")[0];
+      const dateString = toDateOnly(date);
       const workoutsForDay = scheduledWorkouts.filter(
-        (w) => w.date === dateString
+        (w) => w.date ? toDateOnly(new Date(w.date)) === dateString : false
       );
+
+      const getDotColor = (workout: ScheduledDto) => {
+        if (workout.status === "completed") return "bg-green-500";
+        
+        const wDate = new Date(workout.date!);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Create date object for comparison (ignoring time)
+        const workoutDay = new Date(
+          wDate.getFullYear(),
+          wDate.getMonth(),
+          wDate.getDate()
+        );
+
+        if (workoutDay < today) return "bg-red-500"; // Missed
+        return "bg-yellow-500"; // Planned (Today or Future)
+      };
+
       return (
         <div className="relative h-full w-full flex flex-col justify-between items-center p-1">
           {workoutsForDay.length > 0 && (
@@ -177,8 +257,8 @@ export default function SchedulePage() {
               {workoutsForDay.slice(0, 3).map((w) => (
                 <div
                   key={w.id}
-                  className="h-3 w-3 bg-green-500 rounded-full"
-                  title={w.planName || undefined}
+                  className={`h-3 w-3 rounded-full ${getDotColor(w)}`}
+                  title={`${w.planName} (${w.status})`}
                 />
               ))}
             </div>
@@ -214,7 +294,7 @@ export default function SchedulePage() {
   const selectedDay = selectedDayForDisplay;
   const workoutsForSelectedDay = selectedDay
     ? scheduledWorkouts
-        .filter((w) => w.date === selectedDay.toISOString().split("T")[0])
+        .filter((w) => w.date ? toDateOnly(new Date(w.date)) === toDateOnly(selectedDay) : false)
         .sort((a, b) => (a.time || "").localeCompare(b.time || ""))
     : [];
 
@@ -247,27 +327,93 @@ export default function SchedulePage() {
         </h2>
         <div className="mt-4 space-y-3">
           {workoutsForSelectedDay.length > 0 ? (
-            workoutsForSelectedDay.map((workout) => (
-              <div
-                key={workout.id}
-                className="bg-zinc-800 p-4 rounded-lg flex justify-between items-center"
-              >
-                <div>
-                  <p className="font-bold text-lg">
-                    {workout.time ? `${workout.time} - ` : ""}
-                    {workout.planName}
-                  </p>
+            workoutsForSelectedDay.map((workout) => {
+              const isCompleted = workout.status === "completed";
+              const wDate = new Date(workout.date!);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const workoutDay = new Date(
+                wDate.getFullYear(),
+                wDate.getMonth(),
+                wDate.getDate()
+              );
+              const isMissed = !isCompleted && workoutDay < today;
+
+
+              let containerClass = "bg-zinc-800";
+              let badge = null;
+
+              if (isCompleted) {
+                containerClass = "bg-green-900/30 border border-green-700";
+                badge = (
+                  <span className="ml-2 text-sm bg-green-600 text-white px-2 py-0.5 rounded-full">
+                    Completed
+                  </span>
+                );
+              } else if (isMissed) {
+                containerClass = "bg-red-900/30 border border-red-700";
+                badge = (
+                  <span className="ml-2 text-sm bg-red-600 text-white px-2 py-0.5 rounded-full">
+                    Missed
+                  </span>
+                );
+              } else {
+                containerClass = "bg-yellow-900/30 border border-yellow-700";
+                badge = (
+                  <span className="ml-2 text-sm bg-yellow-600 text-white px-2 py-0.5 rounded-full">
+                    Planned
+                  </span>
+                );
+              }
+
+              return (
+                <div
+                  key={workout.id}
+                  className={`p-4 rounded-lg flex justify-between items-center ${containerClass}`}
+                >
+                  <div>
+                    <p className="font-bold text-lg">
+                      {workout.time ? `${workout.time} - ` : ""}
+                      {workout.planName}
+                      {badge}
+                    </p>
                   <p className="text-sm text-zinc-400">
                     {workout.exercises?.length || 0} exercises
                   </p>
                 </div>
                 <div className="flex space-x-2">
+                  {workout.status !== "completed" &&
+                    (() => {
+                      const todayStr = toDateOnly(new Date());
+                      // Fix: Handle ISO strings by converting to YYYY-MM-DD
+                      const workoutDateStr = workout.date ? toDateOnly(new Date(workout.date)) : "";
+                      return workoutDateStr <= todayStr;
+                    })() && (
+                      <button
+                        onClick={() => handleCompleteWorkout(workout.id!)}
+                        className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg transition"
+                      >
+                        Complete
+                      </button>
+                    )}
+
+                  {workout.status === "completed" && (
+                    <button
+                      onClick={() => handleUncompleteWorkout(workout.id!)}
+                      className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded-lg transition"
+                      title="Mark as Planned (Undo)"
+                    >
+                      Undo
+                    </button>
+                  )}
+
                   <button
                     onClick={() => handleEditWorkout(workout)}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg transition"
                   >
                     Edit
                   </button>
+                  
                   <button
                     onClick={() => handleDeleteWorkout(workout.id!)}
                     className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg transition"
@@ -276,7 +422,8 @@ export default function SchedulePage() {
                   </button>
                 </div>
               </div>
-            ))
+              );
+            })
           ) : (
             <p className="text-zinc-400">
               No workouts scheduled for this day. Click the '+' icon on a day...
@@ -292,7 +439,7 @@ export default function SchedulePage() {
           setEditingWorkout(null);
         }}
         onSave={handleSaveWorkout}
-        date={selectedDateForModal}
+        dateString={selectedDateForModal ? toDateOnly(selectedDateForModal) : ""}
         availablePlans={mapApiPlansToFormPlans(plans)}
         initialWorkoutData={editingWorkout}
       />

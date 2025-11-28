@@ -284,7 +284,13 @@ export class SessionsService {
                         fromUtc,
                         toUtc,
                     }: {
+                        /**
+                         * Start date and time of the range (UTC).
+                         */
                         fromUtc: string,
+                        /**
+                         * End date and time of the range (UTC).
+                         */
                         toUtc: string,
                     }): CancelablePromise<Array<WorkoutSessionDto>> {
                         return __request(OpenAPI, {

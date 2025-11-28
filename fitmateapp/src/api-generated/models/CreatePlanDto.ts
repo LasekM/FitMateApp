@@ -3,6 +3,9 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { ExerciseDto } from './ExerciseDto';
+/**
+ * Data transfer object for creating a new workout plan.
+ */
 export type CreatePlanDto = {
     planName: string;
     type: string;

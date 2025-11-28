@@ -23,7 +23,13 @@ export class AnalyticsService {
         from,
         to,
     }: {
+        /**
+         * Start date of the query range.
+         */
         from: string,
+        /**
+         * End date of the query range (must be after From).
+         */
         to: string,
     }): CancelablePromise<OverviewDto> {
         return __request(OpenAPI, {
@@ -63,9 +69,21 @@ export class AnalyticsService {
         exerciseName,
         groupByNormalized,
     }: {
+        /**
+         * Start date of the query range.
+         */
         from: string,
+        /**
+         * End date of the query range (must be after From).
+         */
         to: string,
+        /**
+         * How to group the volume data: 'day', 'week', or 'exercise'.
+         */
         groupBy?: string,
+        /**
+         * Optional filter for a specific exercise name.
+         */
         exerciseName?: string,
         groupByNormalized?: string,
     }): CancelablePromise<Array<TimePointDto>> {
@@ -110,7 +128,13 @@ export class AnalyticsService {
          * Nazwa ćwiczenia (np. "Bench Press").
          */
         name: string,
+        /**
+         * Start date of the query range.
+         */
         from: string,
+        /**
+         * End date of the query range (must be after From).
+         */
         to: string,
     }): CancelablePromise<Array<E1rmPointDto>> {
         return __request(OpenAPI, {
@@ -144,7 +168,13 @@ export class AnalyticsService {
         fromDate,
         toDate,
     }: {
+        /**
+         * Start date of the query range.
+         */
         fromDate: string,
+        /**
+         * End date of the query range (must be after FromDate).
+         */
         toDate: string,
     }): CancelablePromise<AdherenceDto> {
         return __request(OpenAPI, {
@@ -173,6 +203,9 @@ export class AnalyticsService {
     public static getApiAnalyticsPlanVsActual({
         sessionId,
     }: {
+        /**
+         * ID of the workout session to compare against its planned workout.
+         */
         sessionId: string,
     }): CancelablePromise<Array<PlanVsActualItemDto>> {
         return __request(OpenAPI, {

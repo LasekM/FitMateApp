@@ -2,6 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+/**
+ * Represents a set performed during a workout session.
+ */
 export type SessionSetDto = {
     id?: string;
     setNumber?: number;

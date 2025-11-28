@@ -16,6 +16,7 @@ export type { BodyMeasurementDto } from './models/BodyMeasurementDto';
 export type { BodyMetricsProgressDto } from './models/BodyMetricsProgressDto';
 export type { BodyMetricsStatsDto } from './models/BodyMetricsStatsDto';
 export type { ChangePasswordRequest } from './models/ChangePasswordRequest';
+export type { CompleteScheduledRequest } from './models/CompleteScheduledRequest';
 export type { CompleteSessionRequest } from './models/CompleteSessionRequest';
 export type { CreateBodyMeasurementDto } from './models/CreateBodyMeasurementDto';
 export type { CreatePlanDto } from './models/CreatePlanDto';

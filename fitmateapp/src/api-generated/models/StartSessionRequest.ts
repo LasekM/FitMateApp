@@ -2,6 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+/**
+ * Request to start a new workout session.
+ */
 export type StartSessionRequest = {
     scheduledId: string;
 };

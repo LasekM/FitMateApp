@@ -4,12 +4,12 @@ import "react-calendar/dist/Calendar.css";
 import "../styles/CalendarTheme.css";
 import { ScheduledService, type ScheduledDto } from "../api-generated";
 
-const getFormattedDate = (date: Date): string => {
-  return date.toISOString().split("T")[0];
-};
+import { toDateOnly } from "../utils/dateUtils";
 
 export default function CalendarView() {
-  const [activeDays, setActiveDays] = useState<Set<string>>(new Set());
+  const [workoutStatusMap, setWorkoutStatusMap] = useState<
+    Record<string, string>
+  >({});
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -18,11 +18,48 @@ export default function CalendarView() {
         setIsLoading(true);
         const data: ScheduledDto[] = await ScheduledService.getApiScheduled();
 
-        const workoutDates = new Set(
-          data.map((w: ScheduledDto) => w.date || "")
-        );
+        const statusMap: Record<string, string> = {};
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-        setActiveDays(workoutDates);
+        // Group workouts by date
+        const workoutsByDate: Record<string, ScheduledDto[]> = {};
+        data.forEach((w) => {
+          if (!w.date) return;
+          if (!workoutsByDate[w.date]) {
+            workoutsByDate[w.date] = [];
+          }
+          workoutsByDate[w.date].push(w);
+        });
+
+        // Determine status for each date
+        Object.keys(workoutsByDate).forEach((dateStr) => {
+          const workouts = workoutsByDate[dateStr];
+          const dateObj = new Date(dateStr);
+          const dateOnly = new Date(
+            dateObj.getFullYear(),
+            dateObj.getMonth(),
+            dateObj.getDate()
+          );
+
+          const hasMissed = workouts.some(
+            (w) => w.status !== "completed" && dateOnly < today
+          );
+          const hasPlanned = workouts.some(
+            (w) => w.status !== "completed" && dateOnly >= today
+          );
+          const allCompleted = workouts.every((w) => w.status === "completed");
+
+          if (hasMissed) {
+            statusMap[dateStr] = "missed-day-tile";
+          } else if (hasPlanned) {
+            statusMap[dateStr] = "planned-day-tile";
+          } else if (allCompleted) {
+            statusMap[dateStr] = "completed-day-tile";
+          }
+        });
+
+        setWorkoutStatusMap(statusMap);
       } catch (e) {
         console.error("Failed to load workouts for dashboard calendar", e);
       } finally {
@@ -34,14 +71,12 @@ export default function CalendarView() {
 
   const tileClassName = ({ date, view }: { date: Date; view: string }) => {
     if (view === "month") {
-      const dateString = getFormattedDate(date);
-      const isToday = dateString === getFormattedDate(new Date());
+      const dateString = toDateOnly(date);
+      const isToday = dateString === toDateOnly(new Date());
 
       if (isToday) return null;
 
-      if (activeDays.has(dateString)) {
-        return "active-day-tile";
-      }
+      return workoutStatusMap[dateString] || null;
     }
     return null;
   };

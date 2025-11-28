@@ -2,8 +2,10 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { CompleteScheduledRequest } from '../models/CompleteScheduledRequest';
 import type { CreateScheduledDto } from '../models/CreateScheduledDto';
 import type { ScheduledDto } from '../models/ScheduledDto';
+import type { WorkoutSessionDto } from '../models/WorkoutSessionDto';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -228,6 +230,74 @@ export class ScheduledService {
                     401: `Unauthorized`,
                     403: `Forbidden`,
                     404: `Wpis źródłowy nie istnieje.`,
+                    500: `Unexpected server error.`,
+                },
+            });
+        }
+        /**
+         * Przekształca zaplanowany trening w zakończoną sesję.
+         * Pozwala oznaczyć trening jako wykonany bez konieczności przechodzenia przez tryb "Live Session".
+         * Tworzy nową sesję ze statusem `Completed` i kopiuje do niej ćwiczenia z planu.
+         * Jeśli `populateActuals` jest ustawione na `true`, wartości planowane (ciężar, powtórzenia) są kopiowane jako wykonane.
+         * @returns WorkoutSessionDto Sesja została utworzona.
+         * @throws ApiError
+         */
+        public static postApiScheduledComplete({
+            id,
+            requestBody,
+        }: {
+            /**
+             * Identyfikator zaplanowanego treningu.
+             */
+            id: string,
+            /**
+             * Opcjonalne parametry (czas rozpoczęcia/zakończenia, notatki).
+             */
+            requestBody?: CompleteScheduledRequest,
+        }): CancelablePromise<WorkoutSessionDto> {
+            return __request(OpenAPI, {
+                method: 'POST',
+                url: '/api/scheduled/{id}/complete',
+                path: {
+                    'id': id,
+                },
+                body: requestBody,
+                mediaType: 'application/json',
+                errors: {
+                    400: `Trening jest już zakończony lub sesja już istnieje.`,
+                    401: `Unauthorized`,
+                    403: `Forbidden`,
+                    404: `Nie znaleziono zaplanowanego treningu.`,
+                    500: `Unexpected server error.`,
+                },
+            });
+        }
+
+        /**
+         * Cofa status treningu z "completed" na "planned".
+         * Usuwa powiązaną sesję treningową.
+         * @returns ScheduledDto Zaktualizowany trening.
+         * @throws ApiError
+         */
+        public static postApiScheduledUncomplete({
+            id,
+        }: {
+            /**
+             * Identyfikator zaplanowanego treningu.
+             */
+            id: string,
+        }): CancelablePromise<ScheduledDto> {
+            return __request(OpenAPI, {
+                method: 'POST',
+                url: '/api/scheduled/{id}/uncomplete',
+                path: {
+                    'id': id,
+                },
+                errors: {
+                    400: `Trening nie jest zakończony.`,
+                    401: `Unauthorized`,
+                    403: `Forbidden`,
+                    404: `Nie znaleziono zaplanowanego treningu.`,
                     500: `Unexpected server error.`,
                 },
             });

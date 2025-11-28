@@ -103,3 +103,22 @@
   background-color: #3f3f46;
   color: #6ee7b7; /* Kolor tekstu dla "Dziś" */
 }
+
+/* Color Coding */
+.react-calendar-theme .completed-day-tile {
+  background-color: rgba(22, 163, 74, 0.2);
+  color: #6ee7b7; /* green-300 */
+  border-radius: 0.5rem;
+}
+
+.react-calendar-theme .planned-day-tile {
+  background-color: rgba(234, 179, 8, 0.2);
+  color: #fde047; /* yellow-300 */
+  border-radius: 0.5rem;
+}
+
+.react-calendar-theme .missed-day-tile {
+  background-color: rgba(220, 38, 38, 0.2);
+  color: #fca5a5; /* red-300 */
+  border-radius: 0.5rem;
+}

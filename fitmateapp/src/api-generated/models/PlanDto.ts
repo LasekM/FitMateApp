@@ -3,6 +3,9 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { ExerciseDto } from './ExerciseDto';
+/**
+ * Represents a workout plan.
+ */
 export type PlanDto = {
     id?: string;
     planName?: string | null;

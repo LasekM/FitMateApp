@@ -2,6 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+/**
+ * Request to complete a workout session.
+ */
 export type CompleteSessionRequest = {
     sessionNotes?: string | null;
     completedAtUtc?: string | null;

@@ -2,6 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+/**
+ * Request to register a new user.
+ */
 export type RegisterRequest = {
     email: string;
     password: string;
