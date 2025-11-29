@@ -6,6 +6,7 @@ import type { CreateUserDto } from '../models/CreateUserDto';
 import type { ResetPasswordDto } from '../models/ResetPasswordDto';
 import type { UpdateUserDto } from '../models/UpdateUserDto';
 import type { UserDto } from '../models/UserDto';
+import type { UserSummaryDto } from '../models/UserSummaryDto';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -239,6 +240,36 @@ export class UsersService {
                             401: `Unauthorized`,
                             403: `Forbidden`,
                             404: `Użytkownik nie istnieje.`,
+                            500: `Unexpected server error.`,
+                        },
+                    });
+                }
+                /**
+                 * Wyszukuje użytkowników na podstawie filtra.
+                 * Endpoint dostępny dla wszystkich zalogowanych użytkowników.
+                 * Zwraca listę użytkowników pasujących do frazy (username, email, fullname).
+                 * @returns UserSummaryDto OK
+                 * @throws ApiError
+                 */
+                public static getApiUsersSearch({
+                    filter,
+                }: {
+                    /**
+                     * Fraza wyszukiwania (wymagana).
+                     */
+                    filter?: string,
+                }): CancelablePromise<Array<UserSummaryDto>> {
+                    return __request(OpenAPI, {
+                        method: 'GET',
+                        url: '/api/users/search',
+                        query: {
+                            'filter': filter,
+                        },
+                        errors: {
+                            400: `Bad request / validation or business error.`,
+                            401: `Unauthorized`,
+                            403: `Forbidden`,
+                            404: `Resource not found.`,
                             500: `Unexpected server error.`,
                         },
                     });

@@ -79,7 +79,13 @@ export default function AddPlanModal({
 
   const addSet = (exIndex: number) => {
     const updatedExercises = [...planData.exercises];
-    updatedExercises[exIndex].sets.push({ reps: 10, weight: 0 });
+    const sets = updatedExercises[exIndex].sets;
+    const lastSet = sets.length > 0 ? sets[sets.length - 1] : { reps: 10, weight: 0 };
+    
+    updatedExercises[exIndex].sets.push({ 
+      reps: lastSet.reps, 
+      weight: lastSet.weight 
+    });
     setPlanData((prev) => ({ ...prev, exercises: updatedExercises }));
   };
 

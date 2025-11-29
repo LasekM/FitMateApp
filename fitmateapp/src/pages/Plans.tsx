@@ -24,14 +24,15 @@ export default function Plans() {
       try {
         setIsLoading(true);
         setError(null);
-        const [myPlansData, sharedPlansData] = await Promise.all([
-          PlansService.getApiPlans({ includeShared: false }),
-          PlansService.getApiPlansSharedWithMe(),
-        ]);
-        console.log("My Plans Data:", myPlansData);
-        console.log("Shared Plans Data:", sharedPlansData);
-        setMyPlans(myPlansData);
-        setSharedPlans(sharedPlansData);
+        // Fetch only owned plans (which includes the duplicated shared ones)
+        const allMyPlans = await PlansService.getApiPlans({ includeShared: false });
+        
+        // Split into "My Plans" and "Shared with me" (duplicates)
+        const shared = allMyPlans.filter(p => p.planName?.includes("(from "));
+        const mine = allMyPlans.filter(p => !p.planName?.includes("(from "));
+
+        setMyPlans(mine);
+        setSharedPlans(shared);
       } catch (err) {
         console.error("Error loading plans from API:", err);
         setError("Failed to load plans. Please try again.");
@@ -79,8 +80,12 @@ export default function Plans() {
         });
       }
 
+      // Refresh and re-split
       const updatedPlans = await PlansService.getApiPlans({ includeShared: false });
-      setMyPlans(updatedPlans);
+      const shared = updatedPlans.filter(p => p.planName?.includes("(from "));
+      const mine = updatedPlans.filter(p => !p.planName?.includes("(from "));
+      setMyPlans(mine);
+      setSharedPlans(shared);
 
       setEditingPlan(null);
       setIsModalOpen(false);
@@ -94,7 +99,9 @@ export default function Plans() {
     const deleteAction = async () => {
       try {
         await PlansService.deleteApiPlans({ id: id });
+        // Update local state based on active tab or just filter both
         setMyPlans((prev) => prev.filter((p) => p.id !== id));
+        setSharedPlans((prev) => prev.filter((p) => p.id !== id));
         toast.success("Plan deleted!");
       } catch (err) {
         console.error("Failed to delete plan:", err);
@@ -168,34 +175,30 @@ export default function Plans() {
 
       <div className="grid gap-4 md:grid-cols-2">
         {plansToDisplay.length > 0 ? (
-          plansToDisplay.map((plan) => (
-            <PlanCard
-              key={plan.id}
-              plan={{
-                id: plan.id || "",
-                name: plan.planName || "Untitled Plan",
-                type: plan.type || "No Type",
-                description: plan.notes || "",
-                exercises: (plan.exercises as any) || [],
-              }}
-              onEdit={
-                activeTab === "my" && plan.id
-                  ? () => handleEditPlan(plan)
-                  : undefined
-              }
-              onDelete={
-                activeTab === "my" && plan.id
-                  ? () => handleDeletePlan(plan.id!)
-                  : undefined
-              }
-              readOnly={activeTab !== "my"}
-            />
-          ))
+          plansToDisplay.map((plan) => {
+            const isSharedCopy = plan.planName?.includes("(from ");
+            return (
+              <PlanCard
+                key={plan.id}
+                plan={{
+                  id: plan.id || "",
+                  name: plan.planName || "Untitled Plan",
+                  type: plan.type || "No Type",
+                  description: plan.notes || "",
+                  exercises: (plan.exercises as any) || [],
+                }}
+                onEdit={() => handleEditPlan(plan)}
+                onDelete={() => handleDeletePlan(plan.id!)}
+                readOnly={false}
+                className={isSharedCopy ? 'hover:bg-yellow-900/20 hover:border-yellow-500/30' : ''}
+              />
+            );
+          })
         ) : (
           <p className="text-zinc-400 md:col-span-2 text-center">
             {activeTab === "my"
               ? 'You don\'t have any plans yet. Click "Add new" to create one!'
-              : "No plans have been shared with you yet."}
+              : "No shared plans found in your library."}
           </p>
         )}
       </div>

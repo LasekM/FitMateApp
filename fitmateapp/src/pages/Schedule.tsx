@@ -49,7 +49,7 @@ export default function SchedulePage() {
 
         const [workoutsData, plansData] = await Promise.all([
           ScheduledService.getApiScheduled(),
-          PlansService.getApiPlans({}),
+          PlansService.getApiPlans({ includeShared: false }),
         ]);
 
         setScheduledWorkouts(workoutsData);
@@ -87,7 +87,7 @@ export default function SchedulePage() {
       planName: workoutFromApi.planName || "No Name",
       exercises: (workoutFromApi.exercises as any) || [],
       status: (workoutFromApi.status as any) || "planned",
-      visibleToFriends: false,
+      visibleToFriends: workoutFromApi.visibleToFriends || false,
     };
     setEditingWorkout(workoutForForm);
     setSelectedDateForModal(null);
@@ -131,6 +131,7 @@ export default function SchedulePage() {
         notes: "",
         exercises: formData.exercises as any,
         status: formData.status,
+        visibleToFriends: formData.visibleToFriends,
       };
 
       console.log("Saving workout with body:", requestBody);

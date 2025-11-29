@@ -54,6 +54,7 @@ export type { UpdateTargetWeightRequest } from './models/UpdateTargetWeightReque
 export type { UpdateUserDto } from './models/UpdateUserDto';
 export type { UserDto } from './models/UserDto';
 export type { UserProfileDto } from './models/UserProfileDto';
+export type { UserSummaryDto } from './models/UserSummaryDto';
 export type { WorkoutSessionDto } from './models/WorkoutSessionDto';
 
 export { AnalyticsService } from './services/AnalyticsService';

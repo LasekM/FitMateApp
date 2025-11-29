@@ -6,6 +6,7 @@ import Plans from "./pages/Plans";
 import Schedule from "./pages/Schedule";
 import Statistics from "./pages/Statistics";
 import Profile from "./pages/Profile";
+import Friends from "./pages/Friends";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import MainLayout from "./layout/MainLayout";
 
@@ -23,6 +24,7 @@ function App() {
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/statistics" element={<Statistics />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/friends" element={<Friends />} />
         </Route>
       </Route>
     </Routes>

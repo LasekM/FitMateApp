@@ -5,6 +5,7 @@ interface PlanCardProps {
   onEdit?: () => void;
   onDelete?: () => void;
   readOnly?: boolean;
+  className?: string;
 }
 
 export const PlanCard = ({
@@ -12,6 +13,7 @@ export const PlanCard = ({
   onEdit,
   onDelete,
   readOnly = false,
+  className = "",
 }: PlanCardProps) => {
   const exercises = plan.exercises || [];
   const totalExercises = exercises.length;
@@ -20,7 +22,7 @@ export const PlanCard = ({
   const hasMoreExercises = exercises.length > exercisesToShow.length;
 
   return (
-    <div className="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700 flex flex-col justify-between hover:border-green-500 transition-all duration-200 transform hover:scale-[1.01]">
+    <div className={`bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700 flex flex-col justify-between hover:border-green-500 transition-all duration-200 transform hover:scale-[1.01] ${className}`}>
       <div>
         <h3 className="text-2xl font-bold text-white mb-2 leading-tight">
           {plan.name}

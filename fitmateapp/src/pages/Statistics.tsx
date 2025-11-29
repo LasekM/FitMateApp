@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import {
   AnalyticsService,
   BodyMetricsService,
+  PlansService,
   type OverviewDto,
   type AdherenceDto,
   type TimePointDto,
   type BodyMetricsStatsDto,
 } from "../api-generated";
-import { toast } from "react-toastify";
 import {
   BarChart,
   Bar,
@@ -31,21 +31,81 @@ export default function Statistics() {
   const [bodyStats, setBodyStats] = useState<BodyMetricsStatsDto | null>(null);
   const [exerciseVolumeData, setExerciseVolumeData] = useState<TimePointDto[]>([]);
   const [bodyMetricsHistory, setBodyMetricsHistory] = useState<any[]>([]);
-  const [selectedExercise, setSelectedExercise] = useState<string>("Bench Press");
+  const [selectedExercise, setSelectedExercise] = useState<string>("");
+  const [availableExercises, setAvailableExercises] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadStatistics();
-  }, [selectedExercise]); // Reload when selected exercise changes
+  // Mapping of normalized (uppercase) name to list of original names
+  const [exerciseVariants, setExerciseVariants] = useState<Record<string, string[]>>({});
 
-  const loadStatistics = async () => {
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  useEffect(() => {
+    if (selectedExercise) {
+      loadExerciseData(selectedExercise);
+    }
+  }, [selectedExercise, exerciseVariants]);
+
+  const loadInitialData = async () => {
     try {
-      console.log("Statistics: Starting to load data...");
       setIsLoading(true);
       setError(null);
+
+      // Fetch plans AND historical exercises to populate the dropdown
+      const [plans, historicalVolume] = await Promise.all([
+        PlansService.getApiPlans({}),
+        AnalyticsService.getApiAnalyticsVolume({ 
+          from: new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString(), // Last year
+          to: new Date().toISOString(), 
+          groupBy: "exercise" 
+        }).catch(() => [])
+      ]);
+
+      const variantsMap: Record<string, Set<string>> = {};
       
-      // Calculate date range: last 30 days
+      // Helper to add to variants map
+      const addExercise = (name: string) => {
+        if (!name) return;
+        const normalized = name.toUpperCase();
+        if (!variantsMap[normalized]) {
+          variantsMap[normalized] = new Set();
+        }
+        variantsMap[normalized].add(name);
+      };
+
+      // Add exercises from current plans
+      plans.forEach(plan => {
+        plan.exercises?.forEach(ex => {
+          if (ex.name) addExercise(ex.name);
+        });
+      });
+
+      // Add exercises from history
+      historicalVolume.forEach(item => {
+        if (item.exerciseName) addExercise(item.exerciseName);
+      });
+      
+      // Convert sets to arrays
+      const finalVariants: Record<string, string[]> = {};
+      Object.keys(variantsMap).forEach(key => {
+        finalVariants[key] = Array.from(variantsMap[key]);
+      });
+      setExerciseVariants(finalVariants);
+
+      const exerciseList = Object.keys(finalVariants).sort((a, b) => a.localeCompare(b));
+      setAvailableExercises(exerciseList);
+      
+      // Set default selected exercise if available
+      if (exerciseList.length > 0 && !selectedExercise) {
+        setSelectedExercise(exerciseList[0]);
+      } else if (!selectedExercise) {
+        setSelectedExercise("BENCH PRESS"); // Fallback
+      }
+
+      // Calculate date range: last 30 days for general stats
       const to = new Date();
       to.setHours(23, 59, 59, 999);
 
@@ -53,74 +113,119 @@ export default function Statistics() {
       from.setDate(from.getDate() - 30);
       from.setHours(0, 0, 0, 0);
       
-      const fromISO = from.toISOString();
-      const toISO = to.toISOString();
+      // Calculate date range: Current Week (Monday to Sunday)
+      const now = new Date();
+      const dayOfWeek = now.getDay(); // 0 (Sun) - 6 (Sat)
+      const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Adjust to get Monday
       
-      // Date-only format for adherence (yyyy-MM-dd)
-      // Note: toISOString() returns UTC. If we want local date for Adherence (DateOnly), 
-      // we should be careful. But usually ISO string split is fine if we accept UTC date.
-      // Let's stick to ISO split for now as it was before.
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() + diffToMonday);
+      startOfWeek.setHours(0, 0, 0, 0);
+      
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      endOfWeek.setHours(23, 59, 59, 999);
+
+      const fromISO = from.toISOString(); // Keep for overview/adherence (last 30 days)
+      const toISO = to.toISOString();
       const fromDate = from.toISOString().split('T')[0];
       const toDate = to.toISOString().split('T')[0];
 
-      console.log("Statistics: Fetching data with dates:", { fromISO, toISO, fromDate, toDate });
+      // Prepare promises for daily volume (workaround for backend aggregation issue)
+      const dailyVolumePromises = [];
+      for (let i = 0; i < 7; i++) {
+        const dStart = new Date(startOfWeek);
+        dStart.setDate(startOfWeek.getDate() + i);
+        dStart.setHours(0, 0, 0, 0);
+        
+        const dEnd = new Date(dStart);
+        dEnd.setHours(23, 59, 59, 999);
+        
+        dailyVolumePromises.push(
+          AnalyticsService.getApiAnalyticsOverview({ 
+            from: dStart.toISOString(), 
+            to: dEnd.toISOString() 
+          })
+          .then(res => ({
+            period: dStart.toISOString().split('T')[0],
+            value: res.totalVolume || 0
+          }))
+          .catch(() => ({
+            period: dStart.toISOString().split('T')[0],
+            value: 0
+          }))
+        );
+      }
 
-      // Fetch all statistics in parallel
-      const [overviewData, adherenceData, volumeData, bodyStatsData, exerciseVolData, bodyMetricsHistoryData] = await Promise.all([
-        AnalyticsService.getApiAnalyticsOverview({ from: fromISO, to: toISO }).catch((e) => {
-          console.log("Overview fetch failed:", e);
-          return null;
-        }),
-        AnalyticsService.getApiAnalyticsAdherence({ fromDate, toDate }).catch((e) => {
-          console.log("Adherence fetch failed:", e);
-          return null;
-        }),
-        AnalyticsService.getApiAnalyticsVolume({
-          from: fromISO,
-          to: toISO,
-          groupBy: "week",
-        }).catch((e) => {
-          console.log("Volume fetch failed:", e);
-          return [];
-        }),
-        BodyMetricsService.getApiBodyMetricsStats().catch((e) => {
-          console.log("Body stats fetch failed:", e);
-          return null;
-        }),
-        AnalyticsService.getApiAnalyticsVolume({
-          from: fromISO,
-          to: toISO,
-          groupBy: "day",
-          exerciseName: selectedExercise,
-        }).catch((e) => {
-          console.log("Exercise volume fetch failed:", e);
-          return [];
-        }),
-        BodyMetricsService.getApiBodyMetrics({}).catch((e) => {
-          console.log("Body metrics history fetch failed:", e);
-          return [];
-        }),
+      const [overviewData, adherenceData, dailyVolumes, bodyStatsData, bodyMetricsHistoryData] = await Promise.all([
+        AnalyticsService.getApiAnalyticsOverview({ from: fromISO, to: toISO }).catch(() => null),
+        AnalyticsService.getApiAnalyticsAdherence({ fromDate, toDate }).catch(() => null),
+        Promise.all(dailyVolumePromises),
+        BodyMetricsService.getApiBodyMetricsStats().catch(() => null),
+        BodyMetricsService.getApiBodyMetrics({}).catch(() => []),
       ]);
-
-      console.log("Statistics: Data fetched", { overviewData, adherenceData, volumeData, bodyStatsData, exerciseVolData, bodyMetricsHistoryData });
 
       setOverview(overviewData);
       setAdherence(adherenceData);
-      setVolumeData(volumeData);
+      setVolumeData(dailyVolumes);
       setBodyStats(bodyStatsData);
-      setExerciseVolumeData(exerciseVolData);
       setBodyMetricsHistory(bodyMetricsHistoryData || []);
+
     } catch (error) {
-      console.error("Error loading statistics:", error);
-      setError("Failed to load statistics. Please try again.");
-      toast.error("Failed to load statistics");
+      console.error("Error loading initial statistics:", error);
+      setError("Failed to load statistics.");
     } finally {
       setIsLoading(false);
-      console.log("Statistics: Loading complete");
     }
   };
 
-  if (isLoading) {
+  const loadExerciseData = async (normalizedName: string) => {
+    try {
+      const to = new Date();
+      to.setHours(23, 59, 59, 999);
+      const from = new Date();
+      from.setDate(from.getDate() - 30);
+      from.setHours(0, 0, 0, 0);
+
+      const variants = exerciseVariants[normalizedName] || [normalizedName];
+      
+      // Fetch data for ALL variants of this exercise
+      const results = await Promise.all(
+        variants.map(variant => 
+          AnalyticsService.getApiAnalyticsVolume({
+            from: from.toISOString(),
+            to: to.toISOString(),
+            groupBy: "day",
+            exerciseName: variant,
+          }).catch(() => [])
+        )
+      );
+
+      // Merge results by date
+      const mergedDataMap: Record<string, TimePointDto> = {};
+
+      results.flat().forEach(point => {
+        if (!point.period) return;
+        // Normalize date to YYYY-MM-DD to group correctly
+        const dateKey = point.period.split('T')[0];
+        
+        if (!mergedDataMap[dateKey]) {
+          mergedDataMap[dateKey] = { ...point, value: 0, period: dateKey };
+        }
+        mergedDataMap[dateKey].value = (mergedDataMap[dateKey].value || 0) + (point.value || 0);
+      });
+
+      const mergedData = Object.values(mergedDataMap).sort((a, b) => 
+        (a.period || "").localeCompare(b.period || "")
+      );
+
+      setExerciseVolumeData(mergedData);
+    } catch (error) {
+      console.error("Error loading exercise data:", error);
+    }
+  };
+
+  if (isLoading && !overview) {
     return (
       <div className="p-6 text-white text-center">
         <div className="text-xl">Loading statistics...</div>
@@ -128,12 +233,12 @@ export default function Statistics() {
     );
   }
 
-  if (error) {
+  if (error && !overview) {
     return (
       <div className="p-6 text-white text-center">
         <div className="text-xl text-red-500">{error}</div>
         <button 
-          onClick={loadStatistics}
+          onClick={loadInitialData}
           className="mt-4 bg-green-600 px-4 py-2 rounded hover:bg-green-700"
         >
           Retry
@@ -152,9 +257,28 @@ export default function Statistics() {
     return [
       { name: "Completed", value: completed, color: "#22c55e" },
       { name: "Missed", value: missed, color: "#ef4444" },
-      { name: "Remaining", value: remaining, color: "#4b5563" }, // Gray-600
+      { name: "Remaining", value: remaining, color: "#4b5563" },
     ].filter(d => d.value > 0);
   })() : [];
+
+  const formatDateTick = (dateStr: string) => {
+    // Handle ISO Week format (e.g., "2025-W45")
+    if (/^\d{4}-W\d{1,2}$/.test(dateStr)) {
+      return dateStr; // Or convert to "Week 45" if preferred
+    }
+    // If it looks like a date string YYYY-MM-DD, parse it manually to avoid timezone issues
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      return date.toLocaleDateString(undefined, { weekday: 'short' }); // Show "Mon", "Tue"
+    }
+    // Fallback for other formats (e.g. ISO with time)
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    }
+    return dateStr;
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -196,7 +320,7 @@ export default function Statistics() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Volume Trend Chart */}
         <div className="bg-gray-800 rounded-xl p-6 shadow-lg">
-          <h2 className="text-2xl font-bold text-white mb-4">Weekly Volume Trend</h2>
+          <h2 className="text-2xl font-bold text-white mb-4">Current Week Volume</h2>
           {volumeData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={volumeData}>
@@ -205,6 +329,7 @@ export default function Statistics() {
                   dataKey="period" 
                   stroke="#9ca3af"
                   style={{ fontSize: '12px' }}
+                  tickFormatter={formatDateTick}
                 />
                 <YAxis 
                   stroke="#9ca3af"
@@ -217,6 +342,10 @@ export default function Statistics() {
                     border: '1px solid #374151',
                     borderRadius: '8px',
                     color: '#fff'
+                  }}
+                  labelFormatter={(label) => {
+                    const d = new Date(label);
+                    return d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
                   }}
                 />
                 <Bar dataKey="value" fill="#22c55e" name="Volume (kg)" radius={[4, 4, 0, 0]} />
@@ -231,6 +360,7 @@ export default function Statistics() {
             </div>
           )}
         </div>
+
 
         {/* Adherence Donut Chart */}
         <div className="bg-gray-800 rounded-xl p-6 shadow-lg flex flex-col">
@@ -300,25 +430,16 @@ export default function Statistics() {
           <h2 className="text-2xl font-bold text-white">Volume Progress</h2>
           <select
             value={selectedExercise}
-            onChange={(e) => {
-              setSelectedExercise(e.target.value);
-              // Trigger reload when exercise changes. 
-              // Note: Ideally we'd separate this fetch, but for now full reload is safer given the structure.
-              // We can optimize later to only fetch this part.
-              // For now, let's just trigger the effect dependency or call a specific loader.
-              // Since loadStatistics uses the state selectedExercise, we need to wait for state update or pass it.
-              // Best way here is to let useEffect handle it if we added selectedExercise to dependency array,
-              // but loadStatistics is called once on mount.
-              // Let's just call a specific fetcher or reload all.
-              // To avoid stale closure, we'll pass the new value to a helper or just reload.
-              // Actually, setState is async. We should use useEffect for this or pass param.
-            }}
-            className="bg-gray-700 text-white px-3 py-1 rounded border border-gray-600"
+            onChange={(e) => setSelectedExercise(e.target.value)}
+            className="bg-gray-700 text-white px-3 py-1 rounded border border-gray-600 max-w-[200px]"
           >
-            <option value="Bench Press">Bench Press</option>
-            <option value="Squat">Squat</option>
-            <option value="Deadlift">Deadlift</option>
-            <option value="Overhead Press">Overhead Press</option>
+            {availableExercises.length > 0 ? (
+              availableExercises.map((ex) => (
+                <option key={ex} value={ex}>{ex}</option>
+              ))
+            ) : (
+              <option value="" disabled>No exercises found</option>
+            )}
           </select>
         </div>
         {exerciseVolumeData.length > 0 ? (
@@ -329,7 +450,7 @@ export default function Statistics() {
                 dataKey="period" 
                 stroke="#9ca3af"
                 style={{ fontSize: '12px' }}
-                tickFormatter={(date) => new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                tickFormatter={formatDateTick}
               />
               <YAxis 
                 stroke="#9ca3af"
@@ -343,7 +464,7 @@ export default function Statistics() {
                   borderRadius: '8px',
                   color: '#fff'
                 }}
-                labelFormatter={(date) => new Date(date).toLocaleDateString()}
+                labelFormatter={(label) => formatDateTick(label)}
               />
               <Line 
                 type="monotone" 
@@ -412,14 +533,14 @@ export default function Statistics() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                     <XAxis 
                       dataKey="measuredAtUtc" 
-                      tickFormatter={(date) => new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      tickFormatter={formatDateTick}
                       stroke="#9ca3af"
                       style={{ fontSize: '12px' }}
                     />
                     <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} domain={['auto', 'auto']} />
                     <Tooltip 
                       contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px', color: '#fff' }}
-                      labelFormatter={(date) => new Date(date).toLocaleDateString()}
+                      labelFormatter={(label) => formatDateTick(label)}
                     />
                     <Legend />
                     <Line type="monotone" dataKey="weightKg" stroke="#22c55e" strokeWidth={2} name="Weight (kg)" dot={{ r: 4 }} />
@@ -438,14 +559,14 @@ export default function Statistics() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                     <XAxis 
                       dataKey="measuredAtUtc" 
-                      tickFormatter={(date) => new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      tickFormatter={formatDateTick}
                       stroke="#9ca3af"
                       style={{ fontSize: '12px' }}
                     />
                     <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} domain={['auto', 'auto']} />
                     <Tooltip 
                       contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px', color: '#fff' }}
-                      labelFormatter={(date) => new Date(date).toLocaleDateString()}
+                      labelFormatter={(label) => formatDateTick(label)}
                     />
                     <Legend />
                     <Line type="monotone" dataKey="chestCm" stroke="#3b82f6" strokeWidth={2} name="Chest" dot={false} connectNulls />

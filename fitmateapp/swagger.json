@@ -7110,6 +7110,121 @@
         ]
       }
     },
+    "/api/users/search": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Wyszukuje użytkowników na podstawie filtra.",
+        "description": "Endpoint dostępny dla wszystkich zalogowanych użytkowników.\nZwraca listę użytkowników pasujących do frazy (username, email, fullname).",
+        "parameters": [
+          {
+            "name": "filter",
+            "in": "query",
+            "description": "Fraza wyszukiwania (wymagana).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserSummaryDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/401",
+                  "title": "Unauthorized",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/403",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request / validation or business error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/400",
+                  "title": "One or more validation errors occurred.",
+                  "status": 400,
+                  "traceId": "00-0123456789abcdef0123456789abcdef-0123456789abcdef-00"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/404",
+                  "title": "Not Found",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/500",
+                  "title": "An unexpected error occurred.",
+                  "status": 500
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "oauth2": [ ]
+          }
+        ]
+      }
+    },
     "/": {
       "get": {
         "tags": [
@@ -8766,6 +8881,23 @@
         },
         "additionalProperties": false,
         "description": "Represents the profile of a user."
+      },
+      "UserSummaryDto": {
+        "type": "object",
+        "properties": {
+          "userName": {
+            "type": "string",
+            "description": "The user's unique username.",
+            "nullable": true
+          },
+          "fullName": {
+            "type": "string",
+            "description": "The user's full name.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Simplified user information for search results."
       },
       "WorkoutSessionDto": {
         "type": "object",
