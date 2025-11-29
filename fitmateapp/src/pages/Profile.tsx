@@ -40,9 +40,9 @@ const Profile = () => {
     notes: "",
   });
 
-  // Target Weight (Mock)
-  const [targetWeight, setTargetWeight] = useState("70");
-  const weightDifference = metricsStats?.currentWeightKg ? (metricsStats.currentWeightKg - parseFloat(targetWeight || "0")).toFixed(1) : "--";
+  // Target Weight
+  const [targetWeight, setTargetWeight] = useState("");
+  const weightDifference = metricsStats?.currentWeightKg && targetWeight ? (metricsStats.currentWeightKg - parseFloat(targetWeight)).toFixed(1) : "--";
 
   useEffect(() => {
     loadData();
@@ -51,10 +51,11 @@ const Profile = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [profileData, statsData, historyData] = await Promise.all([
+      const [profileData, statsData, historyData, targetWeightData] = await Promise.all([
         UserProfileService.getApiUserprofile(),
         BodyMetricsService.getApiBodyMetricsStats().catch(() => null), // Handle 404 if no metrics
         BodyMetricsService.getApiBodyMetrics({}).catch(() => []),
+        UserProfileService.getApiUserprofileTargetWeight().catch(() => null),
       ]);
 
       setProfileForm({
@@ -65,6 +66,7 @@ const Profile = () => {
 
       setMetricsStats(statsData);
       setMeasurements(historyData || []);
+      setTargetWeight(targetWeightData?.targetWeightKg?.toString() || "");
 
       // Pre-fill form with latest measurement data (except weight which user likely wants to input new)
       if (historyData && historyData.length > 0) {
@@ -78,9 +80,6 @@ const Profile = () => {
           hipsCm: latest.hipsCm?.toString() || "",
           bicepsCm: latest.bicepsCm?.toString() || "",
           thighsCm: latest.thighsCm?.toString() || "",
-          // We leave weight empty for new entry, or could pre-fill it too. 
-          // User request: "Height and body measurements let them remain default previous"
-          // Implies Weight is the one they enter.
         }));
       }
     } catch (err) {
@@ -126,6 +125,20 @@ const Profile = () => {
     }
   };
 
+  const handleSaveTargetWeight = async () => {
+    try {
+      await UserProfileService.putApiUserprofileTargetWeight({
+        requestBody: {
+          targetWeightKg: targetWeight ? parseFloat(targetWeight) : 0, // 0 clears it
+        },
+      });
+      toast.success("Target weight saved!");
+    } catch (err: any) {
+      console.error("Save target weight error:", err);
+      toast.error(err.body?.message || "Failed to save target weight.");
+    }
+  };
+
   const handleSaveMeasurement = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -151,7 +164,7 @@ const Profile = () => {
       
       toast.success("Measurement saved successfully!");
       
-      // Refresh stats and history to ensure we have the latest server-generated data (dates, IDs, etc.)
+      // Refresh stats and history
       const [newStats, newHistory] = await Promise.all([
         BodyMetricsService.getApiBodyMetricsStats(),
         BodyMetricsService.getApiBodyMetrics({}),
@@ -160,7 +173,7 @@ const Profile = () => {
       setMetricsStats(newStats);
       setMeasurements(newHistory || []);
 
-      // Reset weight and notes, keep other measurements as they likely don't change daily
+      // Reset weight and notes
       setMeasurementForm(prev => ({
         ...prev,
         weightKg: "",
@@ -234,7 +247,7 @@ const Profile = () => {
             </div>
             <div className="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
               <p className="text-zinc-400 text-sm">Target Weight</p>
-              <p className="text-2xl font-bold text-blue-400">{targetWeight} kg <span className="text-xs text-zinc-500">(Mock)</span></p>
+              <p className="text-2xl font-bold text-blue-400">{targetWeight || "--"} kg</p>
             </div>
             <div className="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
               <p className="text-zinc-400 text-sm">To Go</p>
@@ -309,176 +322,161 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* 3. Settings Section */}
-          <div className="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <Activity size={20} /> Settings
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm text-zinc-400 mb-1">Target Weight (kg)</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={targetWeight}
-                  onChange={(e) => setTargetWeight(e.target.value)}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-green-500"
-                  placeholder="Enter target weight"
-                />
-                <p className="text-xs text-zinc-500 mt-1">Used to calculate "To Go" progress.</p>
-              </div>
-              <div>
-                <label className="block text-sm text-zinc-400 mb-1">Height (cm)</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={measurementForm.heightCm}
-                  onChange={(e) => setMeasurementForm({ ...measurementForm, heightCm: e.target.value })}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-green-500"
-                  placeholder="Enter your height"
-                />
-                <p className="text-xs text-zinc-500 mt-1">Required for BMI calculation and new entries.</p>
-              </div>
-            </div>
-          </div>
-
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* 4. Unified Measurement Form */}
-            <div className="bg-zinc-900 p-6 rounded-xl border border-zinc-800 h-fit">
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <Activity size={20} /> New Measurement
-              </h2>
-              <form onSubmit={handleSaveMeasurement} className="space-y-6">
-                
-                {/* Core Metrics */}
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-zinc-300 border-b border-zinc-700 pb-1">Core Metrics</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs text-zinc-400 mb-1">Weight (kg) *</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        required
-                        value={measurementForm.weightKg}
-                        onChange={(e) => setMeasurementForm({ ...measurementForm, weightKg: e.target.value })}
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-green-500"
-                        placeholder="Current"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-zinc-400 mb-1">Height (cm) *</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        required
-                        value={measurementForm.heightCm}
-                        onChange={(e) => setMeasurementForm({ ...measurementForm, heightCm: e.target.value })}
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-green-500"
-                      />
+            {/* Left Column: Settings & New Measurement */}
+            <div className="space-y-8">
+              {/* 3. Settings Section */}
+              <div className="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
+                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  <Activity size={20} /> Settings
+                </h2>
+                <div>
+                  <label className="block text-sm text-zinc-400 mb-1">Target Weight (kg)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={targetWeight}
+                    onChange={(e) => setTargetWeight(e.target.value)}
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-green-500 mb-2"
+                    placeholder="Enter target weight"
+                  />
+                  <button
+                    onClick={handleSaveTargetWeight}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg transition-colors"
+                  >
+                    Save
+                  </button>
+                  <p className="text-xs text-zinc-500 mt-1">Used to calculate "To Go" progress.</p>
+                </div>
+              </div>
+
+              {/* 4. Unified Measurement Form */}
+              <div className="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
+                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  <Activity size={20} /> New Measurement
+                </h2>
+                <form onSubmit={handleSaveMeasurement} className="space-y-6">
+                  
+                  {/* Core Metrics */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium text-zinc-300 border-b border-zinc-700 pb-1">Core Metrics</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs text-zinc-400 mb-1">Weight (kg) *</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          required
+                          value={measurementForm.weightKg}
+                          onChange={(e) => setMeasurementForm({ ...measurementForm, weightKg: e.target.value })}
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-green-500"
+                          placeholder="Current"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-zinc-400 mb-1">Height (cm) *</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          required
+                          value={measurementForm.heightCm}
+                          onChange={(e) => setMeasurementForm({ ...measurementForm, heightCm: e.target.value })}
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-green-500"
+                        />
+                      </div>
                     </div>
                   </div>
+
+                  {/* Body Measurements */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium text-zinc-300 border-b border-zinc-700 pb-1">Body Measurements (cm)</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs text-zinc-400 mb-1">Chest</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={measurementForm.chestCm}
+                          onChange={(e) => setMeasurementForm({ ...measurementForm, chestCm: e.target.value })}
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-green-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-zinc-400 mb-1">Waist</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={measurementForm.waistCm}
+                          onChange={(e) => setMeasurementForm({ ...measurementForm, waistCm: e.target.value })}
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-green-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-zinc-400 mb-1">Hips</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={measurementForm.hipsCm}
+                          onChange={(e) => setMeasurementForm({ ...measurementForm, hipsCm: e.target.value })}
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-green-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-zinc-400 mb-1">Biceps</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={measurementForm.bicepsCm}
+                          onChange={(e) => setMeasurementForm({ ...measurementForm, bicepsCm: e.target.value })}
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-green-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-zinc-400 mb-1">Thighs</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={measurementForm.thighsCm}
+                          onChange={(e) => setMeasurementForm({ ...measurementForm, thighsCm: e.target.value })}
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-green-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-zinc-400 mb-1">Body Fat %</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={measurementForm.bodyFatPercentage}
+                          onChange={(e) => setMeasurementForm({ ...measurementForm, bodyFatPercentage: e.target.value })}
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-green-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   <div>
-                    <label className="block text-xs text-zinc-400 mb-1">Target Weight (kg) <span className="text-zinc-600">(Mock)</span></label>
+                    <label className="block text-xs text-zinc-400 mb-1">Notes</label>
                     <input
-                      type="number"
-                      step="0.1"
-                      value={targetWeight}
-                      onChange={(e) => setTargetWeight(e.target.value)}
+                      type="text"
+                      value={measurementForm.notes}
+                      onChange={(e) => setMeasurementForm({ ...measurementForm, notes: e.target.value })}
                       className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-green-500"
+                      placeholder="Optional notes"
                     />
                   </div>
-                </div>
 
-                {/* Body Measurements */}
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-zinc-300 border-b border-zinc-700 pb-1">Body Measurements (cm)</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs text-zinc-400 mb-1">Chest</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={measurementForm.chestCm}
-                        onChange={(e) => setMeasurementForm({ ...measurementForm, chestCm: e.target.value })}
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-green-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-zinc-400 mb-1">Waist</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={measurementForm.waistCm}
-                        onChange={(e) => setMeasurementForm({ ...measurementForm, waistCm: e.target.value })}
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-green-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-zinc-400 mb-1">Hips</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={measurementForm.hipsCm}
-                        onChange={(e) => setMeasurementForm({ ...measurementForm, hipsCm: e.target.value })}
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-green-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-zinc-400 mb-1">Biceps</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={measurementForm.bicepsCm}
-                        onChange={(e) => setMeasurementForm({ ...measurementForm, bicepsCm: e.target.value })}
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-green-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-zinc-400 mb-1">Thighs</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={measurementForm.thighsCm}
-                        onChange={(e) => setMeasurementForm({ ...measurementForm, thighsCm: e.target.value })}
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-green-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-zinc-400 mb-1">Body Fat %</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={measurementForm.bodyFatPercentage}
-                        onChange={(e) => setMeasurementForm({ ...measurementForm, bodyFatPercentage: e.target.value })}
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-green-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs text-zinc-400 mb-1">Notes</label>
-                  <input
-                    type="text"
-                    value={measurementForm.notes}
-                    onChange={(e) => setMeasurementForm({ ...measurementForm, notes: e.target.value })}
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-green-500"
-                    placeholder="Optional notes"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg transition-colors"
-                >
-                  Save Measurement
-                </button>
-              </form>
+                  <button
+                    type="submit"
+                    className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg transition-colors"
+                  >
+                    Save Measurement
+                  </button>
+                </form>
+              </div>
             </div>
 
-            {/* 5. History List */}
-            <div className="lg:col-span-2 bg-zinc-900 p-6 rounded-xl border border-zinc-800">
+            {/* 5. History List (Right Column) */}
+            <div className="lg:col-span-2 bg-zinc-900 p-6 rounded-xl border border-zinc-800 h-full">
               <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
                 <TrendingUp size={20} /> History
               </h2>

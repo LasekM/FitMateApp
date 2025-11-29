@@ -143,10 +143,18 @@ export default function Statistics() {
   }
 
   // Prepare adherence pie chart data
-  const adherencePieData = adherence ? [
-    { name: "Completed", value: adherence.completed || 0, color: "#22c55e" },
-    { name: "Missed", value: adherence.missed || 0, color: "#ef4444" },
-  ] : [];
+  const adherencePieData = adherence ? (() => {
+    const planned = adherence.planned || 0;
+    const completed = adherence.completed || 0;
+    const missed = adherence.missed || 0;
+    const remaining = Math.max(0, planned - completed - missed);
+
+    return [
+      { name: "Completed", value: completed, color: "#22c55e" },
+      { name: "Missed", value: missed, color: "#ef4444" },
+      { name: "Remaining", value: remaining, color: "#4b5563" }, // Gray-600
+    ].filter(d => d.value > 0);
+  })() : [];
 
   return (
     <div className="p-6 space-y-6">
@@ -168,11 +176,11 @@ export default function Statistics() {
           icon="💪"
         />
         <StatCard
-          title="Avg Intensity"
-          value={overview?.avgIntensity?.toFixed(1) || "0"}
-          unit="%"
-          subtitle="Of max capacity"
-          icon="🔥"
+          title="Avg Weight"
+          value={overview?.avgWeight?.toFixed(1) || "0"}
+          unit="kg"
+          subtitle="Across all sets"
+          icon="⚖️"
         />
         <StatCard
           title="Adherence"
@@ -211,7 +219,7 @@ export default function Statistics() {
                     color: '#fff'
                   }}
                 />
-                <Bar dataKey="value" fill="#22c55e" name="Volume (kg)" />
+                <Bar dataKey="value" fill="#22c55e" name="Volume (kg)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -225,21 +233,23 @@ export default function Statistics() {
         </div>
 
         {/* Adherence Donut Chart */}
-        <div className="bg-gray-800 rounded-xl p-6 shadow-lg">
+        <div className="bg-gray-800 rounded-xl p-6 shadow-lg flex flex-col">
           <h2 className="text-2xl font-bold text-white mb-4">Training Adherence</h2>
           {adherence && (adherence.planned || 0) > 0 ? (
-            <>
-              <div className="flex items-center justify-center">
-                <ResponsiveContainer width="100%" height={300}>
+            <div className="flex-1 flex flex-col items-center justify-center relative">
+              <div className="w-full h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={adherencePieData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
+                      innerRadius={80}
                       outerRadius={100}
-                      paddingAngle={adherencePieData.filter(d => d.value > 0).length > 1 ? 5 : 0}
+                      paddingAngle={5}
                       dataKey="value"
+                      cornerRadius={8}
+                      stroke="none"
                     >
                       {adherencePieData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
@@ -249,27 +259,30 @@ export default function Statistics() {
                       contentStyle={{ 
                         backgroundColor: '#1f2937', 
                         border: '1px solid #374151',
-                        borderRadius: '8px'
+                        borderRadius: '8px',
+                        color: '#fff'
                       }}
                     />
                     <Legend 
                       verticalAlign="bottom"
                       height={36}
                       iconType="circle"
-                      wrapperStyle={{ color: '#fff' }}
+                      wrapperStyle={{ color: '#fff', paddingTop: '20px' }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
-              </div>
-              <div className="mt-4 text-center">
-                <div className="text-4xl font-bold text-white">
-                  {adherence.adherencePct?.toFixed(1)}%
+                
+                {/* Center Text Overlay */}
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-[60%] text-center pointer-events-none">
+                  <div className="text-4xl font-bold text-white">
+                    {adherence.adherencePct?.toFixed(0)}%
+                  </div>
+                  <div className="text-xs text-zinc-400 uppercase tracking-wider mt-1">
+                    Adherence
+                  </div>
                 </div>
-                <div className="text-zinc-400 mt-1">
-                  {adherence.completed} / {adherence.planned} sessions
-                </div>
               </div>
-            </>
+            </div>
           ) : (
             <div className="h-[300px] flex items-center justify-center border-2 border-dashed border-gray-600 rounded-lg">
               <div className="text-center text-gray-400">
