@@ -8,6 +8,7 @@ import type { ExerciseDto } from './ExerciseDto';
  */
 export type PlanDto = {
     id?: string;
+    sharedPlanId?: string | null;
     planName?: string | null;
     type?: string | null;
     notes?: string | null;

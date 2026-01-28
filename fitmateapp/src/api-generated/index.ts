@@ -22,8 +22,10 @@ export type { CreateBodyMeasurementDto } from './models/CreateBodyMeasurementDto
 export type { CreatePlanDto } from './models/CreatePlanDto';
 export type { CreateScheduledDto } from './models/CreateScheduledDto';
 export type { CreateUserDto } from './models/CreateUserDto';
+export type { DeleteAccountDto } from './models/DeleteAccountDto';
 export type { E1rmPointDto } from './models/E1rmPointDto';
 export type { ExerciseDto } from './models/ExerciseDto';
+export type { ExerciseSummaryDto } from './models/ExerciseSummaryDto';
 export type { FriendDto } from './models/FriendDto';
 export type { FriendRequestDto } from './models/FriendRequestDto';
 export type { FriendScheduledWorkoutDto } from './models/FriendScheduledWorkoutDto';

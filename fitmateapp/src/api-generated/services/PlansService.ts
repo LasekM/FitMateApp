@@ -433,4 +433,34 @@ export class PlansService {
                             },
                         });
                     }
+                    /**
+                     * Usuwa udostępniony plan na podstawie ID planu (wygodne dla frontendu).
+                     * Usuwa wpis udostępnienia (SharedPlan) dla zalogowanego użytkownika na podstawie ID planu.
+                     * Działa to analogicznie do usunięcia przez ID udostępnienia, ale pozwala frontendowi użyć ID planu, który już zna.
+                     * @returns void
+                     * @throws ApiError
+                     */
+                    public static deleteApiPlansSharedByPlan({
+                        planId,
+                    }: {
+                        /**
+                         * Identyfikator planu (nie SharedPlanId).
+                         */
+                        planId: string,
+                    }): CancelablePromise<void> {
+                        return __request(OpenAPI, {
+                            method: 'DELETE',
+                            url: '/api/plans/shared/by-plan/{planId}',
+                            path: {
+                                'planId': planId,
+                            },
+                            errors: {
+                                400: `Bad request / validation or business error.`,
+                                401: `Unauthorized`,
+                                403: `Forbidden`,
+                                404: `Nie znaleziono wpisu udostępnienia dla tego planu.`,
+                                500: `Unexpected server error.`,
+                            },
+                        });
+                    }
                 }

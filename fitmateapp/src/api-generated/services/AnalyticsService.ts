@@ -4,6 +4,7 @@
 /* eslint-disable */
 import type { AdherenceDto } from '../models/AdherenceDto';
 import type { E1rmPointDto } from '../models/E1rmPointDto';
+import type { ExerciseSummaryDto } from '../models/ExerciseSummaryDto';
 import type { OverviewDto } from '../models/OverviewDto';
 import type { PlanVsActualItemDto } from '../models/PlanVsActualItemDto';
 import type { TimePointDto } from '../models/TimePointDto';
@@ -217,6 +218,42 @@ export class AnalyticsService {
             errors: {
                 400: `Nieprawidłowy identyfikator sesji.`,
                 401: `Unauthorized`,
+                403: `Forbidden`,
+                404: `Resource not found.`,
+                500: `Unexpected server error.`,
+            },
+        });
+    }
+    /**
+     * Pobiera listę wszystkich ćwiczeń wykonanych przez użytkownika.
+     * Zwraca znormalizowaną listę unikalnych ćwiczeń (case-insensitive).
+     * Każde ćwiczenie zawiera metadane: liczba treningów, pierwsze i ostatnie wykonanie.
+     * @returns ExerciseSummaryDto Lista ćwiczeń została pobrana.
+     * @throws ApiError
+     */
+    public static getApiAnalyticsExercises({
+        fromUtc,
+        toUtc,
+    }: {
+        /**
+         * Opcjonalna data początkowa (UTC).
+         */
+        fromUtc?: string,
+        /**
+         * Opcjonalna data końcowa (UTC).
+         */
+        toUtc?: string,
+    }): CancelablePromise<Array<ExerciseSummaryDto>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/analytics/exercises',
+            query: {
+                'fromUtc': fromUtc,
+                'toUtc': toUtc,
+            },
+            errors: {
+                400: `Bad request / validation or business error.`,
+                401: `Użytkownik niezalogowany.`,
                 403: `Forbidden`,
                 404: `Resource not found.`,
                 500: `Unexpected server error.`,

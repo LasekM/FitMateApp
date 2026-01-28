@@ -29,7 +29,6 @@ axios.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as any;
 
-    // Jeśli 401 i nie jest to endpoint refresh/login/register
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
@@ -38,7 +37,6 @@ axios.interceptors.response.use(
       !originalRequest.url?.includes("/auth/register")
     ) {
       if (isRefreshing) {
-        // Czekaj na zakończenie refreshu
         return new Promise((resolve) => {
           addRefreshSubscriber((token: string) => {
             originalRequest.headers["Authorization"] = `Bearer ${token}`;
@@ -56,8 +54,6 @@ axios.interceptors.response.use(
           throw new Error("No refresh token");
         }
 
-        // Call refresh endpoint
-        // Note: Using axios directly to avoid circular dependency if we used AuthService
         const response = await axios.post(`${OpenAPI.BASE}/api/auth/refresh`, {
           refreshToken,
         });

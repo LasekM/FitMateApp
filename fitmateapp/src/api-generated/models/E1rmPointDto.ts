@@ -11,7 +11,7 @@ export type E1rmPointDto = {
      */
     day?: string;
     /**
-     * Estimated 1-rep max value calculated using Brzycki formula.
+     * Estimated 1-rep max value calculated using Epley formula.
      */
     e1Rm?: number;
     /**

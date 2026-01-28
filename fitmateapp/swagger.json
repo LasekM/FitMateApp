@@ -630,6 +630,126 @@
         ]
       }
     },
+    "/api/analytics/exercises": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Pobiera listę wszystkich ćwiczeń wykonanych przez użytkownika.",
+        "description": "Zwraca znormalizowaną listę unikalnych ćwiczeń (case-insensitive).\nKażde ćwiczenie zawiera metadane: liczba treningów, pierwsze i ostatnie wykonanie.",
+        "parameters": [
+          {
+            "name": "fromUtc",
+            "in": "query",
+            "description": "Opcjonalna data początkowa (UTC).",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "toUtc",
+            "in": "query",
+            "description": "Opcjonalna data końcowa (UTC).",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista ćwiczeń została pobrana.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExerciseSummaryDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Użytkownik niezalogowany.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/403",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request / validation or business error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/400",
+                  "title": "One or more validation errors occurred.",
+                  "status": 400,
+                  "traceId": "00-0123456789abcdef0123456789abcdef-0123456789abcdef-00"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/404",
+                  "title": "Not Found",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/500",
+                  "title": "An unexpected error occurred.",
+                  "status": 500
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "oauth2": [ ]
+          }
+        ]
+      }
+    },
     "/api/auth/register": {
       "post": {
         "tags": [
@@ -4159,6 +4279,108 @@
         ]
       }
     },
+    "/api/plans/shared/by-plan/{planId}": {
+      "delete": {
+        "tags": [
+          "Plans"
+        ],
+        "summary": "Usuwa udostępniony plan na podstawie ID planu (wygodne dla frontendu).",
+        "description": "Usuwa wpis udostępnienia (SharedPlan) dla zalogowanego użytkownika na podstawie ID planu.\nDziała to analogicznie do usunięcia przez ID udostępnienia, ale pozwala frontendowi użyć ID planu, który już zna.",
+        "parameters": [
+          {
+            "name": "planId",
+            "in": "path",
+            "description": "Identyfikator planu (nie SharedPlanId).",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Udostępnienie usunięte."
+          },
+          "404": {
+            "description": "Nie znaleziono wpisu udostępnienia dla tego planu.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/401",
+                  "title": "Unauthorized",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/403",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request / validation or business error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/400",
+                  "title": "One or more validation errors occurred.",
+                  "status": 400,
+                  "traceId": "00-0123456789abcdef0123456789abcdef-0123456789abcdef-00"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/500",
+                  "title": "An unexpected error occurred.",
+                  "status": 500
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "oauth2": [ ]
+          }
+        ]
+      }
+    },
     "/api/scheduled": {
       "post": {
         "tags": [
@@ -6093,6 +6315,98 @@
             "oauth2": [ ]
           }
         ]
+      },
+      "delete": {
+        "tags": [
+          "UserProfile"
+        ],
+        "summary": "Usuwa konto zalogowanego użytkownika.",
+        "description": "**Uwaga:** Operacja jest nieodwracalna. Wymaga podania hasła.\nWszystkie powiązane dane (plany, sesje treningowe, przyjaźnie, pomiary) zostaną automatycznie usunięte.",
+        "requestBody": {
+          "description": "Obiekt zawierający hasło użytkownika.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Konto zostało pomyślnie usunięte."
+          },
+          "400": {
+            "description": "Błąd walidacji lub nieprawidłowe hasło.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Użytkownik niezalogowany.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/403",
+                  "title": "Forbidden",
+                  "status": 403
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/404",
+                  "title": "Not Found",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "example": {
+                  "type": "https://httpstatuses.com/500",
+                  "title": "An unexpected error occurred.",
+                  "status": 500
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "oauth2": [ ]
+          }
+        ]
       }
     },
     "/api/userprofile/change-password": {
@@ -7129,7 +7443,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Lista użytkowników.",
             "content": {
               "application/json": {
                 "schema": {
@@ -7929,6 +8243,19 @@
         "additionalProperties": false,
         "description": "Data transfer object for creating a new user."
       },
+      "DeleteAccountDto": {
+        "required": [
+          "password"
+        ],
+        "type": "object",
+        "properties": {
+          "password": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "E1rmPointDto": {
         "type": "object",
         "properties": {
@@ -7939,7 +8266,7 @@
           },
           "e1Rm": {
             "type": "number",
-            "description": "Estimated 1-rep max value calculated using Brzycki formula.",
+            "description": "Estimated 1-rep max value calculated using Epley formula.",
             "format": "double"
           },
           "sessionId": {
@@ -7979,6 +8306,33 @@
         },
         "additionalProperties": false,
         "description": "Represents an exercise within a workout plan."
+      },
+      "ExerciseSummaryDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the exercise.",
+            "nullable": true
+          },
+          "workoutCount": {
+            "type": "integer",
+            "description": "Number of workout sessions containing this exercise.",
+            "format": "int32"
+          },
+          "firstPerformedUtc": {
+            "type": "string",
+            "description": "First time this exercise was performed (UTC).",
+            "format": "date-time"
+          },
+          "lastPerformedUtc": {
+            "type": "string",
+            "description": "Most recent time this exercise was performed (UTC).",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Represents a summary of an exercise performed by the user."
       },
       "FriendDto": {
         "required": [
@@ -8270,6 +8624,11 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "sharedPlanId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
           },
           "planName": {
             "type": "string",

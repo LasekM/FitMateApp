@@ -248,7 +248,7 @@ export class UsersService {
                  * Wyszukuje użytkowników na podstawie filtra.
                  * Endpoint dostępny dla wszystkich zalogowanych użytkowników.
                  * Zwraca listę użytkowników pasujących do frazy (username, email, fullname).
-                 * @returns UserSummaryDto OK
+                 * @returns UserSummaryDto Lista użytkowników.
                  * @throws ApiError
                  */
                 public static getApiUsersSearch({

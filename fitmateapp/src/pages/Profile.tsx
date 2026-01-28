@@ -37,7 +37,6 @@ const Profile = () => {
     hipsCm: "",
     bicepsCm: "",
     thighsCm: "",
-    notes: "",
   });
 
   // Target Weight
@@ -158,7 +157,6 @@ const Profile = () => {
           hipsCm: measurementForm.hipsCm ? parseFloat(measurementForm.hipsCm) : undefined,
           bicepsCm: measurementForm.bicepsCm ? parseFloat(measurementForm.bicepsCm) : undefined,
           thighsCm: measurementForm.thighsCm ? parseFloat(measurementForm.thighsCm) : undefined,
-          notes: measurementForm.notes,
         },
       });
       
@@ -177,7 +175,6 @@ const Profile = () => {
       setMeasurementForm(prev => ({
         ...prev,
         weightKg: "",
-        notes: "",
       }));
     } catch (err: any) {
       console.error("Save measurement error:", err);
@@ -454,16 +451,7 @@ const Profile = () => {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-xs text-zinc-400 mb-1">Notes</label>
-                    <input
-                      type="text"
-                      value={measurementForm.notes}
-                      onChange={(e) => setMeasurementForm({ ...measurementForm, notes: e.target.value })}
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-green-500"
-                      placeholder="Optional notes"
-                    />
-                  </div>
+
 
                   <button
                     type="submit"

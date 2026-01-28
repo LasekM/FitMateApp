@@ -131,43 +131,45 @@ export default function Statistics() {
       const fromDate = from.toISOString().split('T')[0];
       const toDate = to.toISOString().split('T')[0];
 
-      // Prepare promises for daily volume (workaround for backend aggregation issue)
-      const dailyVolumePromises = [];
-      for (let i = 0; i < 7; i++) {
-        const dStart = new Date(startOfWeek);
-        dStart.setDate(startOfWeek.getDate() + i);
-        dStart.setHours(0, 0, 0, 0);
-        
-        const dEnd = new Date(dStart);
-        dEnd.setHours(23, 59, 59, 999);
-        
-        dailyVolumePromises.push(
-          AnalyticsService.getApiAnalyticsOverview({ 
-            from: dStart.toISOString(), 
-            to: dEnd.toISOString() 
-          })
-          .then(res => ({
-            period: dStart.toISOString().split('T')[0],
-            value: res.totalVolume || 0
-          }))
-          .catch(() => ({
-            period: dStart.toISOString().split('T')[0],
-            value: 0
-          }))
-        );
-      }
-
-      const [overviewData, adherenceData, dailyVolumes, bodyStatsData, bodyMetricsHistoryData] = await Promise.all([
+        const [overviewData, adherenceData, dailyVolumesData, bodyStatsData, bodyMetricsHistoryData] = await Promise.all([
         AnalyticsService.getApiAnalyticsOverview({ from: fromISO, to: toISO }).catch(() => null),
         AnalyticsService.getApiAnalyticsAdherence({ fromDate, toDate }).catch(() => null),
-        Promise.all(dailyVolumePromises),
+        AnalyticsService.getApiAnalyticsVolume({ 
+          from: startOfWeek.toISOString(), 
+          to: endOfWeek.toISOString(),
+          groupBy: "day" 
+        }).catch(() => []),
         BodyMetricsService.getApiBodyMetricsStats().catch(() => null),
         BodyMetricsService.getApiBodyMetrics({}).catch(() => []),
       ]);
 
       setOverview(overviewData);
       setAdherence(adherenceData);
-      setVolumeData(dailyVolumes);
+      
+      // Process daily volumes to ensure all days of the week are represented
+      const processedDailyVolumes = [];
+      const volumeMap = new Map();
+      
+      dailyVolumesData?.forEach(item => {
+        if (item.period) {
+          const dateKey = item.period.split('T')[0];
+          volumeMap.set(dateKey, item.value || 0);
+        }
+      });
+
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(startOfWeek);
+        d.setDate(startOfWeek.getDate() + i);
+        const dateKey = d.toISOString().split('T')[0];
+        processedDailyVolumes.push({
+          period: dateKey,
+          value: volumeMap.get(dateKey) || 0
+        });
+      }
+
+      setOverview(overviewData);
+      setAdherence(adherenceData);
+      setVolumeData(processedDailyVolumes);
       setBodyStats(bodyStatsData);
       setBodyMetricsHistory(bodyMetricsHistoryData || []);
 

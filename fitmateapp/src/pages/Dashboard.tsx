@@ -113,7 +113,7 @@ const Dashboard = () => {
 
     return (
       <div className="text-xl leading-relaxed">
-        Current weight is <span className="text-4xl font-bold text-white mx-1">{currentWeight} kg</span>. 
+        Current weight is <span className="text-4xl font-bold text-white mx-1">{currentWeight.toFixed(1)} kg</span>.  
         Only <span className="text-4xl font-bold text-green-400 mx-1">{diff.toFixed(1)} kg</span> left to reach your goal!
       </div>
     );
@@ -169,7 +169,7 @@ const Dashboard = () => {
     }
 
     const data = weightHistory.map(item => ({
-      date: new Date(item.measuredAtUtc!).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }),
+      rawDate: item.measuredAtUtc,
       weight: item.weightKg
     }));
 
@@ -178,7 +178,8 @@ const Dashboard = () => {
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
             <XAxis 
-              dataKey="date" 
+              dataKey="rawDate" 
+              tickFormatter={(value) => new Date(value).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
               stroke="#71717a" 
               fontSize={12} 
               tickLine={false}
@@ -191,12 +192,14 @@ const Dashboard = () => {
               tickLine={false}
               axisLine={false}
               domain={['auto', 'auto']}
-              width={30}
+              tickFormatter={(val) => val.toFixed(1)}
+              width={40}
             />
             <Tooltip 
               contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', color: '#fff' }}
               itemStyle={{ color: '#4ade80' }}
-              formatter={(value: number) => [`${value} kg`, 'Weight']}
+              formatter={(value: number) => [`${value.toFixed(1)} kg`, 'Weight']}
+              labelFormatter={(value) => new Date(value).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
               labelStyle={{ color: '#9ca3af', marginBottom: '4px' }}
             />
             <Line 

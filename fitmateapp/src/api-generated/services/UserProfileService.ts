@@ -3,6 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { ChangePasswordRequest } from '../models/ChangePasswordRequest';
+import type { DeleteAccountDto } from '../models/DeleteAccountDto';
 import type { TargetWeightDto } from '../models/TargetWeightDto';
 import type { UpdateBiometricsPrivacyRequest } from '../models/UpdateBiometricsPrivacyRequest';
 import type { UpdateProfileRequest } from '../models/UpdateProfileRequest';
@@ -70,6 +71,35 @@ export class UserProfileService {
                      * "This username is already taken."
                      * "This email is already in use."
                      * "UserName cannot contain spaces."`,
+                    401: `Użytkownik niezalogowany.`,
+                    403: `Forbidden`,
+                    404: `Resource not found.`,
+                    500: `Unexpected server error.`,
+                },
+            });
+        }
+        /**
+         * Usuwa konto zalogowanego użytkownika.
+         * **Uwaga:** Operacja jest nieodwracalna. Wymaga podania hasła.
+         * Wszystkie powiązane dane (plany, sesje treningowe, przyjaźnie, pomiary) zostaną automatycznie usunięte.
+         * @returns void
+         * @throws ApiError
+         */
+        public static deleteApiUserprofile({
+            requestBody,
+        }: {
+            /**
+             * Obiekt zawierający hasło użytkownika.
+             */
+            requestBody?: DeleteAccountDto,
+        }): CancelablePromise<void> {
+            return __request(OpenAPI, {
+                method: 'DELETE',
+                url: '/api/userprofile',
+                body: requestBody,
+                mediaType: 'application/json',
+                errors: {
+                    400: `Błąd walidacji lub nieprawidłowe hasło.`,
                     401: `Użytkownik niezalogowany.`,
                     403: `Forbidden`,
                     404: `Resource not found.`,
